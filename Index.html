@@ -1,0 +1,1572 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Endy Pinheiro Futevôlei Team — Sistema de Gestão</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+
+  :root{
+    --navy:#0B2A4A; --navy-light:#154277; --navy-deep:#081D34;
+    --gold:#C9A227; --gold-light:#E7C765; --gold-soft:#F3E7C4;
+    --cream:#F7F4EC; --card:#FFFFFF; --line:#DFD8C0;
+    --ink:#16212C; --ink-soft:#5C6773;
+    --success:#2F7D5A; --danger:#B3413A;
+    --radius:16px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:var(--cream); color:var(--ink); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; padding-bottom:60px;}
+  h1,h2,h3,.display{font-family:'Bebas Neue',sans-serif; letter-spacing:0.03em; line-height:1;}
+  .horizon{position:relative; background:linear-gradient(135deg,var(--navy-deep) 0%, var(--navy) 55%, var(--navy-light) 100%); overflow:hidden;}
+  .horizon svg{display:block; width:100%; height:auto;}
+  .topbar{background:var(--navy-deep); color:#fff; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; border-bottom:2px solid var(--gold);}
+  .brand{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .brand-mark{width:38px; height:38px; border-radius:50%; overflow:hidden; background:#fff; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
+  .brand-mark img{width:100%; height:100%; object-fit:cover;}
+  .brand-name{font-family:'Bebas Neue'; font-size:20px; letter-spacing:0.04em;}
+  .proto-tag{font-size:11px; font-weight:600; text-transform:uppercase; background:rgba(201,162,39,0.18); color:var(--gold-light); padding:4px 10px; border-radius:20px; letter-spacing:0.06em;}
+  .role-switch{display:flex; gap:6px; background:rgba(255,255,255,0.08); padding:4px; border-radius:30px;}
+  .role-switch button{border:none; background:transparent; color:#fff; opacity:0.75; padding:8px 16px; border-radius:24px; font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer; transition:all .2s ease;}
+  .role-switch button.active{background:var(--gold); color:var(--navy-deep); opacity:1;}
+  .logout-btn{border:1.5px solid rgba(255,255,255,0.35); background:transparent; color:#fff; padding:8px 14px; border-radius:20px; font-family:'Inter'; font-weight:600; font-size:12.5px; cursor:pointer;}
+  .logout-btn:hover{border-color:var(--gold);}
+  .net-divider{display:flex; align-items:center; gap:8px; margin:32px 0 20px 0; flex-wrap:wrap;}
+  .net-divider .dot{width:6px; height:6px; border-radius:50%; background:var(--navy); opacity:.5;}
+  .net-divider .rope{flex:1; height:0; border-top:2px dashed var(--line); min-width:24px;}
+  .net-divider span.label{font-family:'Bebas Neue'; letter-spacing:0.08em; color:var(--ink-soft); font-size:14px; white-space:nowrap;}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px;}
+  .view{display:none; animation:fade .25s ease;}
+  .view.active{display:block;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:20px;}
+  .grid{display:grid; gap:16px;}
+  .grid-2{grid-template-columns:1fr 1fr;}
+  .grid-3{grid-template-columns:repeat(3,1fr);}
+  .grid-4{grid-template-columns:repeat(4,1fr);}
+  @media(max-width:760px){ .grid-2,.grid-3,.grid-4{grid-template-columns:1fr;} }
+  .pill{display:inline-block; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;}
+  .pill-aprendiz{background:#E7E9ED; color:#4A5566;}
+  .pill-iniciante{background:#DCE8F5; color:var(--navy-light);}
+  .pill-intermediario{background:var(--gold-soft); color:#8A6D1D;}
+  .pill-avancado{background:var(--navy); color:#fff;}
+  .pill-pendente{background:var(--gold-soft); color:#8A6D1D;}
+  .pill-ativo{background:#DFEFE6; color:var(--success);}
+  .pill-inativo{background:#F3E1DE; color:var(--danger);}
+  .btn{border:none; cursor:pointer; font-family:'Inter'; font-weight:700; font-size:14px; padding:12px 20px; border-radius:12px; transition:transform .12s ease, box-shadow .12s ease;}
+  .btn:active{transform:scale(0.97);}
+  .btn-primary{background:var(--navy); color:#fff;}
+  .btn-primary:hover{box-shadow:0 6px 16px rgba(11,42,74,0.28);}
+  .btn-gold{background:var(--gold); color:var(--navy-deep);}
+  .btn-gold:hover{box-shadow:0 6px 16px rgba(201,162,39,0.35);}
+  .btn-outline{background:transparent; border:1.5px solid var(--navy); color:var(--navy);}
+  .btn-ghost{background:#EFEAD9; color:var(--ink);}
+  .btn-danger{background:#F3E1DE; color:var(--danger);}
+  .btn-sm{padding:8px 14px; font-size:12.5px; border-radius:9px;}
+  .btn[disabled]{opacity:0.55; cursor:not-allowed;}
+  .hero-aluno{color:#fff; padding:28px 24px 44px 24px; position:relative;}
+  .hero-aluno .greeting{font-size:14px; opacity:0.85; font-weight:500;}
+  .hero-aluno h1{font-size:38px; margin-top:2px;}
+  .hero-aluno .meta{display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap;}
+  .classes-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(240px,1fr)); gap:14px;}
+  .class-card{display:flex; flex-direction:column; gap:12px; padding:18px; border-radius:16px; border:1px solid var(--line); background:#fff; position:relative; overflow:hidden;}
+  .class-card.today{border-color:var(--gold); background:#FFFCF2;}
+  .class-card-top{display:flex; align-items:center; gap:14px;}
+  .class-day{font-family:'Bebas Neue'; font-size:26px; color:var(--navy); width:52px; text-align:center; background:var(--cream); border-radius:12px; padding:8px 0; flex-shrink:0;}
+  .class-info .t{font-weight:700; font-size:14.5px;}
+  .class-info .s{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
+  .class-tipo{font-size:11.5px; font-weight:700; color:var(--navy-light); background:#EAF0F7; display:inline-block; padding:3px 10px; border-radius:20px; width:fit-content;}
+  .class-prof{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-soft); border-top:1px dashed var(--line); padding-top:10px;}
+  .class-prof .mini-avatar{width:24px; height:24px; border-radius:50%; background:var(--navy-light); color:#fff; display:flex; align-items:center; justify-content:center; font-size:10.5px; font-weight:700; flex-shrink:0;}
+  .checkin-btn{width:100%;}
+  .checkin-btn.done{background:var(--success); color:#fff;}
+  .checkin-btn.falta{background:#F3E1DE; color:var(--danger);}
+  .level-track{display:flex; justify-content:space-between; position:relative; margin:34px 0 10px 0;}
+  .level-track:before{content:""; position:absolute; top:13px; left:20px; right:20px; height:4px; background:var(--line); border-radius:4px; z-index:0;}
+  .level-track .fill{position:absolute; top:13px; left:20px; height:4px; background:var(--gold); border-radius:4px; z-index:1; transition:width .4s ease;}
+  .level-stop{position:relative; z-index:2; text-align:center; flex:1;}
+  .level-stop .node{width:28px; height:28px; border-radius:50%; background:#fff; border:3px solid var(--line); margin:0 auto 8px auto; display:flex; align-items:center; justify-content:center; font-size:13px;}
+  .level-stop.reached .node{border-color:var(--gold); background:var(--gold); color:var(--navy-deep);}
+  .level-stop.current .node{border-color:var(--navy); background:var(--navy); color:#fff; box-shadow:0 0 0 5px rgba(11,42,74,0.12);}
+  .level-stop .lbl{font-size:12px; font-weight:700;}
+  .level-stop .pts{font-size:11px; color:var(--ink-soft);}
+  .freq-bar{height:10px; background:#EFEAD9; border-radius:20px; overflow:hidden; margin-top:6px;}
+  .freq-bar .fill{height:100%; background:var(--success); border-radius:20px;}
+  .student-row{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 16px; border:1px solid var(--line); border-radius:12px; margin-bottom:10px; background:#fff; flex-wrap:wrap;}
+  .avatar{width:38px; height:38px; border-radius:50%; background:var(--navy-light); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; flex-shrink:0;}
+  .empty-note{font-size:13px; color:var(--ink-soft); padding:8px 2px;}
+  .stat-card .num{font-family:'Bebas Neue'; font-size:36px; color:var(--navy);}
+  .stat-card .lbl{font-size:12.5px; color:var(--ink-soft); font-weight:600; text-transform:uppercase; letter-spacing:0.03em;}
+  .stat-card .sub{font-size:11.5px; margin-top:4px; font-weight:600;}
+  .sub.up{color:var(--success);} .sub.warn{color:var(--danger);}
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  th{text-align:left; padding:10px 8px; color:var(--ink-soft); font-size:11.5px; text-transform:uppercase; letter-spacing:0.03em; border-bottom:1px solid var(--line);}
+  td{padding:11px 8px; border-bottom:1px solid var(--line); vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  .td-actions{display:flex; gap:6px; flex-wrap:wrap;}
+  .modal-bg{display:none; position:fixed; inset:0; background:rgba(11,20,30,0.5); align-items:center; justify-content:center; z-index:50; padding:20px;}
+  .modal-bg.open{display:flex;}
+  .modal{background:#fff; border-radius:18px; padding:26px; width:100%; max-width:460px; max-height:85vh; overflow-y:auto;}
+  .modal h3{font-size:22px; margin-bottom:16px; color:var(--navy);}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12.5px; font-weight:700; margin-bottom:6px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.02em;}
+  .field select, .field input{width:100%; padding:10px 12px; border-radius:9px; border:1.5px solid var(--line); font-family:'Inter'; font-size:14px;}
+  .field select:focus, .field input:focus{outline:none; border-color:var(--navy);}
+  .modal-actions{display:flex; gap:10px; margin-top:20px;}
+  .toast{position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--navy-deep); color:#fff; padding:12px 22px; border-radius:30px; font-size:13.5px; font-weight:600; opacity:0; transition:all .25s ease; z-index:100; pointer-events:none; text-align:center; max-width:90vw;}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+  section.block{margin-bottom:28px;}
+  .flex-between{display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;}
+  .admin-tabs{display:flex; gap:4px; background:#EFEAD9; padding:4px; border-radius:14px; margin:20px 0 8px 0; flex-wrap:wrap;}
+  .admin-tabs button{border:none; background:transparent; color:var(--ink-soft); font-family:'Inter'; font-weight:700; font-size:13px; padding:10px 16px; border-radius:10px; cursor:pointer; transition:all .15s ease;}
+  .admin-tabs button.active{background:var(--navy); color:#fff;}
+  .admin-tab-panel{display:none;}
+  .admin-tab-panel.active{display:block; animation:fade .2s ease;}
+  .alert-row{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border-radius:12px; background:#FBEFEC; border:1px solid #EAD0CB; margin-bottom:8px;}
+  .alert-row .txt{font-size:13.5px;}
+  .alert-row .txt strong{display:block; font-size:14px;}
+  .fin-status{font-weight:700; font-size:12.5px;}
+  .fin-status.pago{color:var(--success);}
+  .fin-status.pendente{color:var(--danger);}
+  .star-widget{display:flex; gap:6px; margin:10px 0 14px 0;}
+  .star-widget .star{font-size:26px; cursor:pointer; color:var(--line); transition:transform .1s ease, color .1s ease; line-height:1;}
+  .star-widget .star:hover{transform:scale(1.12);}
+  .star-widget .star.filled{color:var(--gold);}
+  .rating-summary{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
+  .rating-summary .stars-static{color:var(--gold); font-size:16px; letter-spacing:2px;}
+  .anon-note{font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+  .report-box{border:1px dashed var(--line); border-radius:14px; padding:20px; margin-top:16px;}
+  .report-row{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:13.5px;}
+  .report-row:last-child{border-bottom:none;}
+
+  /* ===================== CALENDÁRIO (PRÓXIMOS 7 DIAS) ===================== */
+  .calendar-grid{
+    display:grid; grid-template-columns:repeat(7, 1fr); gap:10px; margin-bottom:8px;
+  }
+  @media(max-width:900px){ .calendar-grid{grid-template-columns:repeat(4, 1fr);} }
+  @media(max-width:560px){ .calendar-grid{grid-template-columns:1fr 1fr;} }
+  .cal-day{
+    background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; min-height:120px;
+  }
+  .cal-day.cal-day-hoje{ border-color:var(--gold); box-shadow:0 0 0 2px rgba(201,162,39,0.18); }
+  .cal-day-header{
+    font-family:'Bebas Neue'; font-size:15px; letter-spacing:0.04em; color:var(--navy);
+    padding-bottom:8px; margin-bottom:8px; border-bottom:1px solid var(--line); text-align:center;
+  }
+  .cal-class{
+    border-radius:10px; padding:8px 9px; margin-bottom:7px; font-size:11.5px; line-height:1.4;
+    border-left:3px solid var(--navy);
+  }
+  .cal-class.nivel-aprendiz{background:#E7E9ED; border-left-color:#4A5566;}
+  .cal-class.nivel-iniciante{background:#DCE8F5; border-left-color:var(--navy-light);}
+  .cal-class.nivel-intermediario{background:var(--gold-soft); border-left-color:#B5900F;}
+  .cal-class.nivel-avancado{background:#DCE3EC; border-left-color:var(--navy);}
+  .cal-class .hora{font-weight:800;}
+  .cal-class .det{color:var(--ink-soft); margin-top:1px;}
+  .cal-empty{font-size:11.5px; color:var(--ink-soft); text-align:center; padding-top:10px;}
+  @media print{ .topbar,.role-switch,.admin-tabs,.net-divider button,button{display:none !important;} }
+
+  /* ===================== LOGIN ===================== */
+  #view-login{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+    background:radial-gradient(circle at 30% 20%, var(--navy-light) 0%, var(--navy-deep) 55%, #050D17 100%);
+  }
+  .login-card{
+    background:#fff; border-radius:22px; padding:40px 34px; width:100%; max-width:400px;
+    box-shadow:0 30px 60px rgba(0,0,0,0.35); text-align:center;
+  }
+  .login-logo{width:190px; max-width:70%; margin:0 auto 20px auto; display:block;}
+  .login-card h2{font-family:'Bebas Neue'; font-size:22px; color:var(--navy); letter-spacing:0.05em; margin-bottom:22px;}
+  .login-card .field{text-align:left;}
+  .login-card .btn{width:100%; margin-top:6px;}
+  .login-hint{
+    margin-top:22px; padding-top:18px; border-top:1px dashed var(--line);
+    font-size:11.5px; color:var(--ink-soft); text-align:left; line-height:1.6;
+  }
+  .login-hint strong{color:var(--navy);}
+  .login-error{color:var(--danger); font-size:12.5px; font-weight:700; margin:-8px 0 12px 0; display:none; text-align:left;}
+
+</style>
+</head>
+<body>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+
+<!-- =================== LOGIN =================== -->
+<div id="view-login">
+  <div class="login-card">
+    <img class="login-logo" src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wgARCAGKAnkDASIAAhEBAxEB/8QAGgABAAMBAQEAAAAAAAAAAAAAAAMEBQYCAf/EABQBAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhADEAAAAt8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABTjNBi2y+jkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAI6T2WqfNdaZ9u6MixPyR2qncD5y51LI8G0xbZfUsU6dzmuXHPaxbY+wHO+TpFPKOhZNY31OI0WBvhgXDTc5sFtz1o13N3TXUsc6VzfQnsAAAAAAAAAAAAAAADL1Mchn0Jzjew9YBvq1kY93CNLWydUcZ2fKGpV2MchvaHKHS5GviHUc1pVS3hdlzB0Uocndpb5UzOr5QvUruiUJcLdMa5D1JyWpn6Bn79DUOYvUbxGl+lPpMK6RTZuwXQAAAAAAAAAAAAAAAM3SxjZQzDjOz5ox+q9aJx0fY4xa0MzWPmVrVSCX5KT0b4ho6gzdH6FK6AM7Q5jaL1CTye58LVPMtCwfb1asQ3MbRItGtCTSfPRYpTc+dTmWKpYvwUDWVaRrsm0XAAAAAAAAAAAAAAKtoct0dHyQXeb0TowMLX50t6kE5DbkEOfPfIpQAKvguqVglBy2zJcMOO1YM6W1MZVhqHMW9C0Z9SzfMb7s554sz+yfB3qZSi2sw81tioV57fszq+xGXQAAAAAAAAAAAAAAM/QqlTzYiMz5pTFOee6RTABQv0ZC0rwFitPZIpQV7Aoe7ng9qP0uqQu1Y7AmAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABHIIpQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//aAAwDAQACAAMAAAAh88888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888844w8888888888888888888888888888888888884k48A840w8808088800w080888888888888888884Mo0gc48kE8k880o8Q0sc8Ak8888888888888888o8oEM800ks8s88wU4YMEYEEY4w88888888888888s0c8owMkc88w84Mg8Ec08sMUkk8888888888888884ck8884wk8ss00o88888888888888888888888888888888c88888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888/9oADAMBAAIAAwAAABDzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzDDzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzghjwTzzzDTzDTzTDTTDjTjzTzzzzzzzzzzzzzzzzzRTwBjTiyCCTwCxwxTTxQwBTzzzzzzzzzzzzzzzyjSgSgCCSzxzzwCDBwxTyggzzzzzzzzzzzzzzzzzzwDzjiQwTzjDDyyzCRQBQShiDADzzzzzzzzzzzzzzyzxzTzxjTRxxhTjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz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" alt="Endy Pinheiro Futevôlei Team">
+    <h2>ACESSO AO SISTEMA</h2>
+    <div class="login-error" id="login-error">Usuário ou senha inválidos.</div>
+    <div class="field"><label>Usuário</label><input type="text" id="login-usuario" placeholder="seu login" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
+    <div class="field"><label>Senha</label><input type="password" id="login-senha" placeholder="sua senha"></div>
+    <button class="btn btn-primary" id="login-btn" onclick="tentarLogin()">Entrar</button>
+    </div>
+  </div>
+
+<div id="app-shell" style="display:none;">
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark"><img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wgARCAGKAnkDASIAAhEBAxEB/8QAGgABAAMBAQEAAAAAAAAAAAAAAAMEBQYCAf/EABQBAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhADEAAAAt8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABTjNBi2y+jkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAI6T2WqfNdaZ9u6MixPyR2qncD5y51LI8G0xbZfUsU6dzmuXHPaxbY+wHO+TpFPKOhZNY31OI0WBvhgXDTc5sFtz1o13N3TXUsc6VzfQnsAAAAAAAAAAAAAAADL1Mchn0Jzjew9YBvq1kY93CNLWydUcZ2fKGpV2MchvaHKHS5GviHUc1pVS3hdlzB0Uocndpb5UzOr5QvUruiUJcLdMa5D1JyWpn6Bn79DUOYvUbxGl+lPpMK6RTZuwXQAAAAAAAAAAAAAAAM3SxjZQzDjOz5ox+q9aJx0fY4xa0MzWPmVrVSCX5KT0b4ho6gzdH6FK6AM7Q5jaL1CTye58LVPMtCwfb1asQ3MbRItGtCTSfPRYpTc+dTmWKpYvwUDWVaRrsm0XAAAAAAAAAAAAAAKtoct0dHyQXeb0TowMLX50t6kE5DbkEOfPfIpQAKvguqVglBy2zJcMOO1YM6W1MZVhqHMW9C0Z9SzfMb7s554sz+yfB3qZSi2sw81tioV57fszq+xGXQAAAAAAAAAAAAAAM/QqlTzYiMz5pTFOee6RTABQv0ZC0rwFitPZIpQV7Aoe7ng9qP0uqQu1Y7AmAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABHIIpQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//aAAwDAQACAAMAAAAh88888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888844w8888888888888888888888888888888888884k48A840w8808088800w080888888888888888884Mo0gc48kE8k880o8Q0sc8Ak8888888888888888o8oEM800ks8s88wU4YMEYEEY4w88888888888888s0c8owMkc88w84Mg8Ec08sMUkk8888888888888884ck8884wk8ss00o88888888888888888888888888888888c88888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888/9oADAMBAAIAAwAAABDzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzDDzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzghjwTzzzDTzDTzTDTTDjTjzTzzzzzzzzzzzzzzzzzRTwBjTiyCCTwCxwxTTxQwBTzzzzzzzzzzzzzzzyjSgSgCCSzxzzwCDBwxTyggzzzzzzzzzzzzzzzzzzwDzjiQwTzjDDyyzCRQBQShiDADzzzzzzzzzzzzzzyzxzTzxjTRxxhTjzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzyzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz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" alt="logo"></div>
+    <div><div class="brand-name">ENDY PINHEIRO FUTEVÔLEI TEAM</div></div>
+    <span class="proto-tag">Protótipo · dados sincronizados em tempo real (exemplo)</span>
+  </div>
+  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+    <div class="role-switch" id="role-switch-container">
+      <button class="active" data-role="aluno">Área do Aluno</button>
+      <button data-role="professor">Área do Professor</button>
+      <button data-role="admin">Administração</button>
+    </div>
+    <button class="logout-btn" onclick="sair()">Sair</button>
+  </div>
+</div>
+
+<!-- =================== ALUNO =================== -->
+<div class="view active" id="view-aluno">
+  <div class="horizon">
+    <div class="hero-aluno wrap" style="max-width:1080px; padding-left:0; padding-right:0;">
+      <div style="padding:0 24px;">
+        <div class="greeting">Boa tarde,</div>
+        <h1 id="aluno-nome">Rafael Costa</h1>
+        <div class="meta">
+          <span class="pill pill-iniciante" id="aluno-pill">Iniciante</span>
+          <span style="font-size:13px; opacity:0.9;" id="aluno-pts-atual">52 pontos</span>
+        </div>
+        <div style="font-size:13px; opacity:0.8; margin-top:6px;" id="aluno-pts-proximo"></div>
+        <button class="btn btn-outline btn-sm" style="margin-top:14px; background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.4); color:#fff;" onclick="abrirTrocarSenha()">Trocar minha senha</button>
+      </div>
+    </div>
+    <svg viewBox="0 0 1440 60" preserveAspectRatio="none"><path fill="#F7F4EC" d="M0,32 C240,60 480,0 720,20 C960,40 1200,10 1440,30 L1440,60 L0,60 Z"></path></svg>
+  </div>
+
+  <div class="wrap">
+    <section class="block">
+      <div class="net-divider">
+        <span class="label" id="aluno-classes-label">SUAS AULAS · NÍVEL INICIANTE</span>
+        <div class="rope"></div>
+        <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+      </div>
+      <div id="aluno-classes"></div>
+    </section>
+
+    <section class="block">
+      <div class="net-divider"><span class="label">FREQUÊNCIA</span><div class="rope"></div></div>
+      <div class="card">
+        <div class="flex-between">
+          <div>
+            <div style="font-size:13px; color:var(--ink-soft); font-weight:600;">Últimos 30 dias</div>
+            <div class="display" style="font-size:30px; color:var(--navy);" id="freq-pct">—</div>
+          </div>
+          <div style="text-align:right; font-size:13px; color:var(--ink-soft);" id="freq-detalhe">Ainda sem histórico</div>
+        </div>
+        <div class="freq-bar"><div class="fill" id="freq-fill" style="width:0%;"></div></div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="net-divider"><span class="label">TABELA DE NÍVEIS</span><div class="rope"></div></div>
+      <div class="card">
+        <div class="level-track" id="nivel-track"></div>
+        <p style="font-size:12.5px; color:var(--ink-soft); margin-top:18px; line-height:1.5;">
+          Cada aula com presença confirmada pelo professor soma 1 ponto. Se você fizer check-in e faltar, o professor pode
+          registrar a falta e você perde 1 ponto. Ao atingir a pontuação mínima, você fica apto a fazer o teste de
+          subida de nível — a promoção em si é sempre confirmada pelo administrador.
+        </p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- =================== PROFESSOR =================== -->
+<div class="view" id="view-professor">
+  <div class="wrap" style="padding-top:28px;">
+    <h1 style="font-size:30px; color:var(--navy);" id="prof-nome-header">OLÁ, PROFESSOR(A)</h1>
+    <p style="color:var(--ink-soft); font-size:14px; margin-top:4px;">Confirme as presenças das suas turmas para que os pontos de frequência sejam contabilizados.</p>
+
+    <div class="net-divider"><span class="label">SUAS TURMAS</span><div class="rope"></div></div>
+    <div class="grid grid-2" id="prof-turmas"></div>
+
+    <div class="net-divider"><span class="label">CONFIRMAR PRESENÇAS</span><div class="rope"></div></div>
+    <div class="card"><div id="prof-pendentes"></div></div>
+
+    <div class="net-divider"><span class="label">ALUNOS DAS SUAS TURMAS</span><div class="rope"></div></div>
+    <div class="card">
+      <p class="empty-note" style="margin-top:-4px;">Somente o administrador pode cadastrar ou editar alunos.</p>
+      <div id="prof-alunos"></div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== ADMIN =================== -->
+<div class="view" id="view-admin">
+  <div class="wrap" style="padding-top:28px;">
+    <div class="flex-between">
+      <h1 style="font-size:30px; color:var(--navy);">PAINEL ADMINISTRATIVO</h1>
+      <span style="font-size:12px; color:var(--ink-soft); font-weight:600;">Acesso master</span>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="active" data-tab="dashboard" onclick="trocarAbaAdmin('dashboard')">Dashboard</button>
+      <button data-tab="aulas" onclick="trocarAbaAdmin('aulas')">Cadastro de Aulas</button>
+      <button data-tab="alunos" onclick="trocarAbaAdmin('alunos')">Cadastro de Alunos</button>
+      <button data-tab="minhaturma" onclick="trocarAbaAdmin('minhaturma')">Área do Professor</button>
+      <button data-tab="promocao" onclick="trocarAbaAdmin('promocao')">Promoção</button>
+      <button data-tab="financeiro" onclick="trocarAbaAdmin('financeiro')">Financeiro</button>
+      <button data-tab="relatorios" onclick="trocarAbaAdmin('relatorios')">Relatórios</button>
+      <button data-tab="backup" onclick="trocarAbaAdmin('backup')">Backup</button>
+
+    </div>
+
+    <!-- ---- DASHBOARD ---- -->
+    <div class="admin-tab-panel active" id="tab-dashboard">
+      <div class="net-divider"><span class="label">VISÃO GERAL</span><div class="rope"></div></div>
+      <div class="grid grid-4">
+        <div class="card stat-card"><div class="num" id="admin-total-alunos">65</div><div class="lbl">Alunos ativos</div><div class="sub up">+4 este mês</div></div>
+        <div class="card stat-card"><div class="num" id="admin-checkins-hoje">23</div><div class="lbl">Check-ins hoje</div><div class="sub up">3 quadras em uso</div></div>
+        <div class="card stat-card"><div class="num">81%</div><div class="lbl">Frequência média</div><div class="sub up">↑ 5% vs mês anterior</div></div>
+        <div class="card stat-card"><div class="num" id="admin-em-risco-num">4</div><div class="lbl">Alunos em risco</div><div class="sub warn">Frequência baixa</div></div>
+      </div>
+
+      <div class="net-divider"><span class="label">CALENDÁRIO · PRÓXIMOS 7 DIAS</span><div class="rope"></div></div>
+      <div class="calendar-grid" id="admin-calendario-dashboard"></div>
+
+      <div class="net-divider"><span class="label">DISTRIBUIÇÃO POR NÍVEL</span><div class="rope"></div></div>
+      <div class="grid grid-4" id="admin-distribuicao"></div>
+
+      <div class="net-divider"><span class="label">ALUNOS COM FREQUÊNCIA BAIXA</span><div class="rope"></div></div>
+      <div class="card" id="admin-baixa-frequencia"></div>
+
+      <div class="net-divider"><span class="label">AVALIAÇÃO DOS PROFESSORES</span><div class="rope"></div></div>
+      <div class="card" id="admin-avaliacao-professores"></div>
+      <p class="anon-note" style="margin:-14px 0 22px 4px;">As avaliações são anônimas — o sistema não registra qual aluno avaliou.</p>
+
+      <div class="net-divider"><span class="label">ANIVERSARIANTES DO MÊS</span><div class="rope"></div></div>
+      <div class="card">
+        <div style="display:flex; gap:14px; flex-wrap:wrap;">
+          <span class="pill" style="background:#EFEAD9;">🎂 Marina Alves — dia 14</span>
+          <span class="pill" style="background:#EFEAD9;">🎂 Diego Farias — dia 22</span>
+          <span class="pill" style="background:#EFEAD9;">🎂 Ana Beatriz — dia 27</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---- CADASTRO DE AULAS ---- -->
+    <div class="admin-tab-panel" id="tab-aulas">
+      <div class="net-divider">
+        <span class="label">CALENDÁRIO · PRÓXIMOS 7 DIAS</span>
+        <div class="rope"></div>
+      </div>
+      <div class="calendar-grid" id="admin-calendario"></div>
+
+      <div class="net-divider">
+        <span class="label">GRADE DE AULAS</span>
+        <div class="rope"></div>
+        <button class="btn btn-primary btn-sm" onclick="abrirCadastroAula()">+ Nova aula</button>
+      </div>
+      <div class="card" style="overflow-x:auto;">
+        <table id="admin-aulas-table">
+          <thead><tr><th>Data</th><th>Horário</th><th>Quadra</th><th>Nível</th><th>Tipo de aula</th><th>Professor</th><th>Vagas</th><th>Ações</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="net-divider">
+        <span class="label">PROFESSORES CADASTRADOS</span>
+        <div class="rope"></div>
+        <button class="btn btn-primary btn-sm" onclick="abrirCadastroProfessor()">+ Cadastrar professor</button>
+      </div>
+      <div class="card" id="admin-professores-lista"></div>
+    </div>
+
+    <!-- ---- CADASTRO DE ALUNOS ---- -->
+    <div class="admin-tab-panel" id="tab-alunos">
+      <div class="net-divider">
+        <span class="label">TODOS OS ALUNOS</span>
+        <div class="rope"></div>
+        <button class="btn btn-primary btn-sm" onclick="abrirCadastroAluno()">+ Cadastrar aluno</button>
+      </div>
+      <div class="card" style="overflow-x:auto;">
+        <table>
+          <thead><tr><th>Aluno</th><th>Nível</th><th>Pontuação</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="admin-alunos-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ---- ÁREA DO PROFESSOR (dentro do admin) ---- -->
+    <div class="admin-tab-panel" id="tab-minhaturma">
+      <p class="empty-note" style="margin-top:-6px;">
+        Se você também dá aula, cadastre-se como professor (aba "Cadastro de Aulas") e escolha seu nome aqui embaixo
+        para confirmar presença ou marcar falta direto do seu login de administrador — sem precisar trocar de conta.
+      </p>
+      <div class="field" style="max-width:360px;">
+        <label>Ver turmas de qual professor</label>
+        <select id="admin-prof-select" onchange="renderAdminComoProfessor()"></select>
+      </div>
+
+      <div class="net-divider"><span class="label">TURMAS</span><div class="rope"></div></div>
+      <div class="grid grid-2" id="admin-prof-turmas"></div>
+
+      <div class="net-divider"><span class="label">CONFIRMAR PRESENÇAS</span><div class="rope"></div></div>
+      <div class="card"><div id="admin-prof-pendentes"></div></div>
+    </div>
+
+    <!-- ---- PROMOÇÃO ---- -->
+    <div class="admin-tab-panel" id="tab-promocao">
+      <div class="net-divider"><span class="label">ALUNOS — CANDIDATOS À PROMOÇÃO</span><div class="rope"></div></div>
+      <p class="empty-note" style="margin-top:-10px; margin-bottom:14px;">
+        Atingir a pontuação não promove automaticamente — significa que o aluno está apto a fazer o teste de subida de nível.
+        A promoção final é sempre uma decisão sua. Você também pode ajustar a pontuação manualmente a qualquer momento.
+      </p>
+      <div class="card">
+        <table>
+          <thead><tr><th>Aluno</th><th>Nível atual</th><th>Pontuação</th><th>Meta do próximo nível</th><th></th><th></th></tr></thead>
+          <tbody id="admin-promocao-table"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ---- FINANCEIRO ---- -->
+    <div class="admin-tab-panel" id="tab-financeiro">
+      <div class="net-divider"><span class="label">VISÃO FINANCEIRA</span><div class="rope"></div></div>
+      <div class="grid grid-3">
+        <div class="card stat-card"><div class="num">R$ 9.750</div><div class="lbl">Receita prevista do mês</div><div class="sub up">65 alunos ativos</div></div>
+        <div class="card stat-card"><div class="num" id="fin-inadimplentes">—</div><div class="lbl">Mensalidades em aberto</div><div class="sub warn">Cobrar via WhatsApp</div></div>
+        <div class="card stat-card"><div class="num">R$ 150</div><div class="lbl">Ticket médio por aluno</div><div class="sub">Valor de exemplo</div></div>
+      </div>
+
+      <div class="admin-tabs" style="margin-top:24px;">
+        <button class="active" data-subtab="mensalidades" onclick="trocarSubAbaFinanceiro('mensalidades')">Mensalidades</button>
+        <button data-subtab="caixa" onclick="trocarSubAbaFinanceiro('caixa')">Caixa</button>
+      </div>
+
+      <div class="admin-tab-panel fin-subtab active" id="subtab-mensalidades">
+        <div class="net-divider"><span class="label">MENSALIDADES</span><div class="rope"></div></div>
+        <div class="card" style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Aluno</th><th>Plano</th><th>Valor</th><th>Vencimento</th><th>Status</th><th></th></tr></thead>
+            <tbody id="admin-financeiro-table"></tbody>
+          </table>
+          <p class="empty-note" style="margin-top:10px;">Ao marcar uma mensalidade como paga, ela entra automaticamente como entrada no Caixa.</p>
+        </div>
+      </div>
+
+      <div class="admin-tab-panel fin-subtab" id="subtab-caixa">
+        <div class="net-divider"><span class="label">RESUMO DO CAIXA</span><div class="rope"></div></div>
+        <div class="grid grid-3">
+          <div class="card stat-card"><div class="num" id="caixa-entradas" style="color:var(--success);">R$ 0</div><div class="lbl">Entradas</div></div>
+          <div class="card stat-card"><div class="num" id="caixa-saidas" style="color:var(--danger);">R$ 0</div><div class="lbl">Saídas</div></div>
+          <div class="card stat-card"><div class="num" id="caixa-saldo">R$ 0</div><div class="lbl">Saldo</div></div>
+        </div>
+        <div class="net-divider">
+          <span class="label">LANÇAMENTOS</span>
+          <div class="rope"></div>
+          <button class="btn btn-primary btn-sm" onclick="abrirLancamentoCaixa()">+ Novo lançamento</button>
+        </div>
+        <div class="card" style="overflow-x:auto;">
+          <table>
+            <thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Origem</th><th>Valor</th></tr></thead>
+            <tbody id="caixa-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---- RELATÓRIOS ---- -->
+    <div class="admin-tab-panel" id="tab-relatorios">
+      <div class="net-divider"><span class="label">RELATÓRIO COMPLETO DO ALUNO</span><div class="rope"></div></div>
+      <div class="card">
+        <div class="field" style="max-width:360px;">
+          <label>Selecione o aluno</label>
+          <select id="rel-aluno-select" onchange="gerarRelatorio()" oninput="gerarRelatorio()"></select>
+        </div>
+        <div id="relatorio-conteudo"></div>
+      </div>
+
+      <div class="net-divider"><span class="label">RELATÓRIO DE PROFESSORES</span><div class="rope"></div></div>
+      <div class="card">
+        <p class="empty-note" style="margin-top:-4px;">Veja quantas aulas cada professor deu, presenças confirmadas nas turmas dele e a avaliação média — filtrando por período.</p>
+        <div class="grid grid-2">
+          <div class="field"><label>Professor</label><select id="rel-prof-select" onchange="gerarRelatorioProfessor()"></select></div>
+          <div></div>
+        </div>
+        <div class="grid grid-2">
+          <div class="field"><label>Data início</label><input type="date" id="rel-prof-inicio" onchange="gerarRelatorioProfessor()"></div>
+          <div class="field"><label>Data fim</label><input type="date" id="rel-prof-fim" onchange="gerarRelatorioProfessor()"></div>
+        </div>
+        <div id="relatorio-professor-conteudo"></div>
+      </div>
+    </div>
+
+    <!-- ---- BACKUP ---- -->
+    <div class="admin-tab-panel" id="tab-backup">
+      <div class="net-divider"><span class="label">BAIXAR BACKUP</span><div class="rope"></div></div>
+      <div class="card">
+        <p class="empty-note" style="margin-top:-4px;">
+          Gera um arquivo .json com todos os dados do sistema (alunos, professores, aulas, check-ins, financeiro, caixa e avaliações).
+          Guarde esse arquivo em algum lugar seguro (Google Drive, computador) periodicamente.
+        </p>
+        <button class="btn btn-primary" onclick="baixarBackup()">Baixar backup completo (.json)</button>
+      </div>
+
+      <div class="net-divider"><span class="label">IMPORTAR BACKUP</span><div class="rope"></div></div>
+      <div class="card">
+        <p class="empty-note" style="margin-top:-4px;">
+          Envie um arquivo .json gerado pelo botão acima para restaurar os dados. <strong>Atenção:</strong> registros com o
+          mesmo ID que já existirem no banco serão atualizados (sobrescritos); registros novos serão criados. Nada é apagado.
+        </p>
+        <div class="field"><label>Arquivo de backup (.json)</label><input type="file" id="backup-file-input" accept="application/json"></div>
+        <button class="btn btn-outline" onclick="importarBackup()">Importar backup</button>
+        <div id="backup-import-status" class="empty-note" style="margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =================== MODAL NOVA AULA =================== -->
+<div class="modal-bg" id="modal-aula">
+  <div class="modal">
+    <h3 id="modal-aula-titulo">Nova aula</h3>
+    <div class="field">
+      <label>Data da aula</label>
+      <input type="date" id="f-data">
+    </div>
+    <div class="field"><label>Horário</label><input type="text" id="f-horario" placeholder="ex: 19:00"></div>
+    <div class="field">
+      <label>Quadra</label>
+      <select id="f-quadra"><option>Quadra 1</option><option>Quadra 2</option><option>Quadra 3</option></select>
+    </div>
+    <div class="field">
+      <label>Nível</label>
+      <select id="f-nivel"><option>Aprendiz</option><option>Iniciante</option><option>Intermediário</option><option>Avançado</option></select>
+    </div>
+    <div class="field">
+      <label>Tipo de aula</label>
+      <input type="text" id="f-tipo" placeholder="ex: Chapa, peito, recepção, situação de jogo...">
+    </div>
+    <div class="field">
+      <label>Professor</label>
+      <select id="f-professor"></select>
+    </div>
+    <div class="field"><label>Capacidade de vagas</label><input type="text" id="f-vagas" placeholder="ex: 12"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('modal-aula')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="salvarAula()">Salvar aula</button>
+    </div>
+  </div>
+</div>
+
+<!-- =================== MODAL CADASTRAR/EDITAR ALUNO =================== -->
+<div class="modal-bg" id="modal-aluno">
+  <div class="modal">
+    <h3 id="modal-aluno-titulo">Cadastrar aluno</h3>
+    <div class="field"><label>Nome completo</label><input type="text" id="a-nome" placeholder="ex: João Pedro Silva"></div>
+    <div class="field"><label>WhatsApp</label><input type="text" id="a-whats" placeholder="ex: (91) 99999-9999"></div>
+    <div class="field"><label>Data de nascimento</label><input type="text" id="a-nasc" placeholder="dd/mm/aaaa"></div>
+    <div class="field">
+      <label>Nível inicial</label>
+      <select id="a-nivel" onchange="sugerirPontosIniciais()"><option>Aprendiz</option><option>Iniciante</option><option>Intermediário</option><option>Avançado</option></select>
+    </div>
+    <div class="field">
+      <label>Pontuação inicial (aulas já frequentadas)</label>
+      <input type="text" id="a-pontos" placeholder="ex: 0" value="0">
+      <div class="anon-note">Preenchido automaticamente pelo nível — pode ajustar se o aluno já vem de outra escolinha.</div>
+    </div>
+    <div class="field"><label>Valor da mensalidade</label><input type="text" id="a-valor" placeholder="ex: 150"></div>
+    <div class="field">
+      <label>Tipo de plano</label>
+      <select id="a-plano"><option>Mensal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option></select>
+    </div>
+    <div class="field"><label>Observações (opcional)</label><input type="text" id="a-obs" placeholder="ex: restrição no ombro direito"></div>
+    <div class="net-divider" style="margin:18px 0 10px 0;"><span class="label">ACESSO AO SISTEMA</span><div class="rope"></div></div>
+    <div class="field"><label>Login (usuário)</label><input type="text" id="a-login" placeholder="ex: rafael.costa"></div>
+    <div class="field"><label>Senha</label><input type="text" id="a-senha" placeholder="defina uma senha provisória"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('modal-aluno')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="salvarAluno()">Salvar aluno</button>
+    </div>
+  </div>
+</div>
+
+<!-- =================== MODAL CADASTRAR PROFESSOR =================== -->
+<div class="modal-bg" id="modal-professor">
+  <div class="modal">
+    <h3>Cadastrar professor</h3>
+    <div class="field"><label>Nome completo</label><input type="text" id="p-nome" placeholder="ex: Coach Fernanda"></div>
+    <div class="field"><label>WhatsApp</label><input type="text" id="p-whats" placeholder="ex: (91) 99999-9999"></div>
+    <div class="net-divider" style="margin:18px 0 10px 0;"><span class="label">ACESSO AO SISTEMA</span><div class="rope"></div></div>
+    <div class="field"><label>Login (usuário)</label><input type="text" id="p-login" placeholder="ex: coach.fernanda"></div>
+    <div class="field"><label>Senha</label><input type="text" id="p-senha" placeholder="defina uma senha provisória"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('modal-professor')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="salvarProfessor()">Salvar professor</button>
+    </div>
+  </div>
+</div>
+
+<!-- =================== MODAL TROCAR SENHA (ALUNO) =================== -->
+<div class="modal-bg" id="modal-senha">
+  <div class="modal">
+    <h3>Trocar minha senha</h3>
+    <div class="field"><label>Nova senha</label><input type="text" id="s-nova-senha" placeholder="digite a nova senha"></div>
+    <div class="field"><label>Confirmar nova senha</label><input type="text" id="s-confirmar-senha" placeholder="repita a nova senha"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('modal-senha')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="salvarTrocaSenha()">Salvar nova senha</button>
+    </div>
+  </div>
+</div>
+
+<!-- =================== MODAL LANÇAMENTO DO CAIXA =================== -->
+<div class="modal-bg" id="modal-caixa">
+  <div class="modal">
+    <h3>Novo lançamento no caixa</h3>
+    <div class="field">
+      <label>Tipo</label>
+      <select id="cx-tipo"><option value="entrada">Entrada</option><option value="saida">Saída</option></select>
+    </div>
+    <div class="field"><label>Valor</label><input type="text" id="cx-valor" placeholder="ex: 150"></div>
+    <div class="field"><label>Descrição</label><input type="text" id="cx-descricao" placeholder="ex: Compra de bolas, aluguel de quadra..."></div>
+    <div class="field"><label>Data</label><input type="date" id="cx-data"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('modal-caixa')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="salvarLancamentoCaixa()">Salvar lançamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- =================== MODAL AJUSTAR PONTOS =================== -->
+<div class="modal-bg" id="modal-pontos">
+  <div class="modal">
+    <h3>Ajustar pontuação</h3>
+    <p class="empty-note" style="margin-top:-6px;" id="ajuste-pontos-aluno-nome"></p>
+    <div class="field">
+      <label>Quantidade de pontos a somar (use negativo para subtrair)</label>
+      <input type="text" id="ajuste-pontos-valor" placeholder="ex: 15 ou -5">
+    </div>
+    <div class="field"><label>Motivo (opcional)</label><input type="text" id="ajuste-pontos-motivo" placeholder="ex: evolução rápida observada em quadra"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('modal-pontos')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="aplicarAjustePontos()">Aplicar</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- fim app-shell -->
+
+<div class="toast" id="toast"></div>
+
+
+<script>
+/* ======================================================================
+   CONEXÃO COM O SUPABASE
+   ====================================================================== */
+const SUPABASE_URL = 'https://sgeqwqjuhkgmcnxblslz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_GCxvK64b2KTd_z_DzCN8Aw_ie1UWzTY';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const NIVEIS = ["Aprendiz","Iniciante","Intermediário","Avançado"];
+const META_NIVEL = {"Aprendiz":0, "Iniciante":60, "Intermediário":120, "Avançado":180};
+const PONTOS_POR_PRESENCA = 1;
+const PONTOS_POR_FALTA = 1;
+const JANELA_CANCELAMENTO_MIN = 60;
+const NOMES_DIA_SEMANA = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+const DIA_CURTO = {"Domingo":"DOM","Segunda":"SEG","Terça":"TER","Quarta":"QUA","Quinta":"QUI","Sexta":"SEX","Sábado":"SAB"};
+
+function nomeDiaSemana(dataStr){ if(!dataStr) return '—'; return NOMES_DIA_SEMANA[new Date(dataStr+'T00:00:00').getDay()]; }
+function diaCurtoDeData(dataStr){ return DIA_CURTO[nomeDiaSemana(dataStr)] || '—'; }
+function formatarDataBR(dataStr){ if(!dataStr) return '—'; const [y,m,d]=dataStr.split('-'); return d+'/'+m; }
+function pillClass(nivel){ return "pill-" + nivel.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function iniciaisDe(nome){ return nome.trim().split(/\s+/).slice(0,2).map(p=>p[0].toUpperCase()).join(''); }
+function minutosParaAula(aula){
+  const dt = new Date(aula.data + 'T' + aula.hora + ':00');
+  return (dt - new Date()) / 60000;
+}
+
+let currentUser = null; // { role: 'admin'|'professor'|'aluno', ...linha da tabela }
+
+/* ---------------- toast ---------------- */
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  const duracao = msg.length > 50 ? 5500 : 2600;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), duracao);
+}
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function trocarAbaAdmin(tab){
+  document.querySelectorAll('.admin-tabs button').forEach(b=>{
+    if(b.dataset.tab) b.classList.toggle('active', b.dataset.tab===tab);
+  });
+  document.querySelectorAll('.wrap > .admin-tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+}
+function trocarSubAbaFinanceiro(sub){
+  document.querySelectorAll('#tab-financeiro .admin-tabs button').forEach(b=>{
+    if(b.dataset.subtab) b.classList.toggle('active', b.dataset.subtab===sub);
+  });
+  document.querySelectorAll('.fin-subtab').forEach(p=>p.classList.remove('active'));
+  document.getElementById('subtab-'+sub).classList.add('active');
+}
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+/* ======================================================================
+   LOGIN
+   ====================================================================== */
+async function tentarLogin(){
+  const usuario = document.getElementById('login-usuario').value.trim().toLowerCase();
+  const senha = document.getElementById('login-senha').value.trim();
+  const erroEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+
+  try{
+    const rAdmins = await sb.from('administradores').select('*').eq('login', usuario).eq('senha', senha);
+    const rProfs  = await sb.from('professores').select('*').eq('login', usuario).eq('senha', senha);
+    const rAlns   = await sb.from('alunos').select('*').eq('login', usuario).eq('senha', senha);
+
+    // Se qualquer uma das 3 consultas veio com erro de verdade (não "sem resultado", mas falha
+    // de conexão/permissão), avisamos isso separado de "senha errada" e mostramos no console.
+    const erros = [rAdmins.error, rProfs.error, rAlns.error].filter(Boolean);
+    if(erros.length){
+      console.error('Erro ao consultar o Supabase:', erros);
+      erroEl.textContent = 'Erro de conexão com o banco de dados. Abra o Console (F12) para ver o detalhe técnico.';
+      erroEl.style.display = 'block';
+      btn.disabled=false; btn.textContent='Entrar';
+      return;
+    }
+
+    const admins = rAdmins.data, profs = rProfs.data, alns = rAlns.data;
+    let role = null, user = null;
+    if(admins && admins.length){ role='admin'; user=admins[0]; }
+    else if(profs && profs.length){ role='professor'; user=profs[0]; }
+    else if(alns && alns.length){ role='aluno'; user=alns[0]; }
+
+    if(!role){
+      erroEl.textContent = 'Usuário ou senha inválidos.';
+      erroEl.style.display = 'block';
+      btn.disabled=false; btn.textContent='Entrar';
+      return;
+    }
+    currentUser = Object.assign({role}, user);
+    erroEl.style.display = 'none';
+    document.getElementById('view-login').style.display = 'none';
+    document.getElementById('app-shell').style.display = 'block';
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('view-'+role).classList.add('active');
+    document.getElementById('role-switch-container').style.display = 'none';
+
+    if(role==='aluno') await renderAlunoView();
+    if(role==='professor') await renderProfessorView();
+    if(role==='admin') await renderAdminView();
+  } catch(err){
+    console.error(err);
+    showToast('Erro ao conectar com o banco. Confira sua internet e tente de novo.');
+  }
+  btn.disabled=false; btn.textContent='Entrar';
+}
+function sair(){
+  currentUser = null;
+  document.getElementById('app-shell').style.display = 'none';
+  document.getElementById('view-login').style.display = 'flex';
+  document.getElementById('login-usuario').value = '';
+  document.getElementById('login-senha').value = '';
+  document.getElementById('login-error').style.display = 'none';
+}
+
+/* ======================================================================
+   ÁREA DO ALUNO
+   ====================================================================== */
+async function renderAlunoView(){
+  const { data: alunoRow } = await sb.from('alunos').select('*').eq('id', currentUser.id).single();
+  currentUser = Object.assign(currentUser, alunoRow);
+  const aluno = currentUser;
+
+  document.getElementById('aluno-nome').textContent = aluno.nome;
+  const pillEl = document.getElementById('aluno-pill');
+  pillEl.textContent = aluno.nivel;
+  pillEl.className = 'pill ' + pillClass(aluno.nivel);
+  document.getElementById('aluno-classes-label').textContent = 'SUAS AULAS · NÍVEL ' + aluno.nivel.toUpperCase();
+
+  const idxNivel = NIVEIS.indexOf(aluno.nivel);
+  const proximoNivel = NIVEIS[idxNivel+1];
+  document.getElementById('aluno-pts-atual').textContent = aluno.pontos + ' pontos';
+  document.getElementById('aluno-pts-proximo').textContent = proximoNivel
+    ? 'Faltam ' + Math.max(META_NIVEL[proximoNivel]-aluno.pontos,0) + ' aulas para o teste de ' + proximoNivel
+    : 'Nível máximo atingido';
+
+  const hoje = new Date().toISOString().slice(0,10);
+  const { data: aulas } = await sb.from('aulas').select('*, professores(id,nome)').eq('nivel', aluno.nivel).gte('data', hoje).order('data').order('hora');
+  const { data: meusCheckins } = await sb.from('checkins').select('*').eq('aluno_id', aluno.id);
+
+  const el = document.getElementById('aluno-classes');
+  if(!aulas || aulas.length===0){
+    el.innerHTML = '<p class="empty-note">Ainda não há aulas cadastradas para o nível ' + aluno.nivel + '.</p>';
+  } else {
+    el.innerHTML = '<div class="classes-grid">' + aulas.map(a=>{
+      const profNome = a.professores ? a.professores.nome : '—';
+      const checkin = (meusCheckins||[]).find(c=>c.aula_id===a.id);
+      let statusHtml;
+      if(!checkin){
+        statusHtml = '<button class="btn checkin-btn btn-primary" onclick="fazerCheckin(' + a.id + ')">Fazer check-in</button>';
+      } else if(checkin.status==='confirmado'){
+        statusHtml = '<button class="btn checkin-btn done" disabled>✓ Presença confirmada · +' + PONTOS_POR_PRESENCA + ' pt</button>';
+      } else if(checkin.status==='falta'){
+        statusHtml = '<button class="btn checkin-btn falta" disabled>Falta registrada pelo professor</button>';
+      } else {
+        const podeCancelar = minutosParaAula(a) > JANELA_CANCELAMENTO_MIN;
+        statusHtml = '<button class="btn checkin-btn done" disabled>✓ Check-in feito</button>' +
+          (podeCancelar
+            ? '<button class="btn btn-outline btn-sm" style="width:100%; margin-top:8px;" onclick="cancelarCheckin(' + checkin.id + ',' + a.id + ')">Cancelar check-in</button>'
+            : '<div class="anon-note" style="margin-top:8px; text-align:center;">Cancelamento indisponível — faltam menos de 1h para a aula</div>');
+      }
+      let avaliacaoHtml = '';
+      if(checkin && checkin.status==='confirmado' && a.professores){
+        avaliacaoHtml = '<div style="border-top:1px dashed var(--line); padding-top:10px; margin-top:2px;">' +
+          '<div style="font-size:12.5px; font-weight:700; margin-bottom:2px;">Avalie o professor nesta aula</div>' +
+          '<div class="star-widget" id="stars-' + a.id + '" data-prof="' + a.professores.id + '">' +
+          [1,2,3,4,5].map(n=>'<span class="star" onclick="selecionarEstrela(' + a.id + ',' + n + ')">★</span>').join('') +
+          '</div>' +
+          '<button class="btn btn-outline btn-sm" id="btn-aval-' + a.id + '" onclick="enviarAvaliacao(' + a.id + ',' + a.professores.id + ')">Enviar avaliação</button>' +
+          '<div class="anon-note">Avaliação anônima — não fica associada ao seu nome.</div></div>';
+      }
+      return '<div class="class-card">' +
+        '<div class="class-card-top"><div class="class-day">' + diaCurtoDeData(a.data) + '</div>' +
+        '<div class="class-info"><div class="t">' + nomeDiaSemana(a.data) + '-feira · ' + formatarDataBR(a.data) + '</div><div class="s">' + a.hora + ' · ' + a.quadra + '</div></div></div>' +
+        '<span class="class-tipo">' + a.tipo + '</span>' +
+        '<div class="class-prof"><div class="mini-avatar">' + profNome.split(' ').map(p=>p[0]).join('').slice(0,2) + '</div>' +
+        '<span>Professor: <strong style="color:var(--ink);">' + profNome + '</strong></span></div>' +
+        statusHtml + avaliacaoHtml + '</div>';
+    }).join('') + '</div>';
+  }
+
+  const track = document.getElementById('nivel-track');
+  const fillPct = Math.min((aluno.pontos / META_NIVEL["Avançado"]) * 100, 100);
+  track.innerHTML = '<div class="fill" style="width:' + fillPct + '%;"></div>' + NIVEIS.map(n=>{
+    const passou = NIVEIS.indexOf(n) < idxNivel;
+    const atual = n === aluno.nivel;
+    const cls = passou ? 'reached' : (atual ? 'current' : '');
+    const marker = passou ? '✓' : (atual ? '●' : (NIVEIS.indexOf(n)+1));
+    return '<div class="level-stop ' + cls + '"><div class="node">' + marker + '</div><div class="lbl">' + n + '</div><div class="pts">' + META_NIVEL[n] + ' aulas</div></div>';
+  }).join('');
+
+  const { data: meusConfirmados } = await sb.from('checkins').select('status').eq('aluno_id', aluno.id);
+  if(meusConfirmados){
+    const total = meusConfirmados.filter(c=>c.status==='confirmado'||c.status==='falta').length;
+    const conf = meusConfirmados.filter(c=>c.status==='confirmado').length;
+    const pct = total ? Math.round((conf/total)*100) : 0;
+    document.getElementById('freq-pct').textContent = total ? pct+'%' : '—';
+    document.getElementById('freq-detalhe').textContent = conf + ' presenças confirmadas de ' + total + ' aulas com resultado registrado';
+    document.getElementById('freq-fill').style.width = pct + '%';
+  }
+}
+
+/* ---------------- trocar a própria senha (aluno) ---------------- */
+function abrirTrocarSenha(){
+  document.getElementById('s-nova-senha').value = '';
+  document.getElementById('s-confirmar-senha').value = '';
+  openModal('modal-senha');
+}
+async function salvarTrocaSenha(){
+  const nova = document.getElementById('s-nova-senha').value.trim();
+  const confirmar = document.getElementById('s-confirmar-senha').value.trim();
+  if(!nova){ showToast('Digite a nova senha'); return; }
+  if(nova !== confirmar){ showToast('As senhas não coincidem'); return; }
+  const { error } = await sb.from('alunos').update({ senha: nova }).eq('id', currentUser.id);
+  if(error){ showToast('Erro ao trocar senha: ' + error.message); console.error(error); return; }
+  currentUser.senha = nova;
+  closeModal('modal-senha');
+  showToast('Senha alterada com sucesso!');
+}
+
+async function fazerCheckin(aulaId){
+  const { error } = await sb.from('checkins').insert({ aula_id: aulaId, aluno_id: currentUser.id, status: 'pendente' });
+  if(error){ showToast('Erro ao fazer check-in.'); console.error(error); return; }
+  showToast('Check-in feito! Sua presença conta 1 ponto assim que o professor confirmar em quadra.');
+  await renderAlunoView();
+}
+async function cancelarCheckin(checkinId, aulaId){
+  const { data: aula } = await sb.from('aulas').select('*').eq('id', aulaId).single();
+  if(minutosParaAula(aula) <= JANELA_CANCELAMENTO_MIN){
+    showToast('Não é mais possível cancelar — faltam menos de 1h para a aula.');
+    return;
+  }
+  await sb.from('checkins').delete().eq('id', checkinId);
+  showToast('Check-in cancelado — vaga liberada para outro aluno.');
+  await renderAlunoView();
+}
+let estrelaSelecionada = {};
+function selecionarEstrela(aulaId, n){
+  estrelaSelecionada[aulaId] = n;
+  document.querySelectorAll('#stars-' + aulaId + ' .star').forEach((s,i)=> s.classList.toggle('filled', i < n));
+}
+async function enviarAvaliacao(aulaId, professorId){
+  const nota = estrelaSelecionada[aulaId];
+  if(!nota){ showToast('Selecione de 1 a 5 estrelas antes de enviar'); return; }
+  const { error } = await sb.from('avaliacoes_professor').insert({ professor_id: professorId, estrelas: nota });
+  if(error){ showToast('Erro ao enviar avaliação.'); console.error(error); return; }
+  const btn = document.getElementById('btn-aval-' + aulaId);
+  if(btn) btn.outerHTML = '<span style="font-size:12px; color:var(--success); font-weight:700;">✓ Avaliação enviada — obrigado!</span>';
+  showToast('Avaliação enviada anonimamente. Obrigado!');
+}
+
+/* ======================================================================
+   ÁREA DO PROFESSOR
+   ====================================================================== */
+async function renderProfessorView(){
+  document.getElementById('prof-nome-header').textContent = 'OLÁ, ' + currentUser.nome.toUpperCase();
+  await renderTurmasEPendentes(currentUser.id, 'prof');
+
+  const { data: minhasAulas } = await sb.from('aulas').select('nivel').eq('professor_id', currentUser.id);
+  const niveisDoProfessor = [...new Set((minhasAulas||[]).map(a=>a.nivel))];
+  let meusAlunos = [];
+  if(niveisDoProfessor.length){
+    const { data } = await sb.from('alunos').select('*').in('nivel', niveisDoProfessor);
+    meusAlunos = data || [];
+  }
+  document.getElementById('prof-alunos').innerHTML = meusAlunos.length ? meusAlunos.map(a=>
+    '<div class="student-row"><div style="display:flex; align-items:center; gap:12px;">' +
+    '<div class="avatar">' + iniciaisDe(a.nome) + '</div><div>' +
+    '<div style="font-weight:700; font-size:14px;">' + a.nome + '</div>' +
+    '<div style="font-size:12px; color:var(--ink-soft);">' + a.nivel + ' · ' + a.pontos + ' aulas</div></div></div>' +
+    '<span class="pill ' + pillClass(a.nivel) + '">' + a.nivel + '</span></div>'
+  ).join('') : '<p class="empty-note">Nenhum aluno cadastrado nas suas turmas ainda.</p>';
+}
+
+/* ---------------- lógica compartilhada: turmas + confirmações pendentes ----------------
+   Usada tanto na Área do Professor (login de professor) quanto na aba "Área do Professor"
+   dentro do Admin (para quando o administrador também dá aula). */
+async function renderTurmasEPendentes(professorId, prefixo){
+  const hoje = new Date().toISOString().slice(0,10);
+  const { data: aulas } = await sb.from('aulas').select('*').eq('professor_id', professorId).gte('data', hoje).order('data').order('hora');
+  const aulaIds = (aulas||[]).map(a=>a.id);
+
+  let checkinsPorAula = {};
+  if(aulaIds.length){
+    const { data: cks } = await sb.from('checkins').select('*, alunos(id,nome)').in('aula_id', aulaIds);
+    (cks||[]).forEach(c=>{
+      if(!checkinsPorAula[c.aula_id]) checkinsPorAula[c.aula_id] = [];
+      checkinsPorAula[c.aula_id].push(c);
+    });
+  }
+
+  const statusInfo = {
+    pendente:  {label:'Aguardando aula', bg:'var(--gold-soft)', color:'#8A6D1D'},
+    confirmado:{label:'Confirmado', bg:'#DFEFE6', color:'var(--success)'},
+    falta:     {label:'Falta', bg:'#F3E1DE', color:'var(--danger)'}
+  };
+
+  const elTurmas = document.getElementById(prefixo + '-turmas');
+  if(elTurmas){
+    elTurmas.innerHTML = (aulas&&aulas.length) ? aulas.map(a=>{
+      const lista = checkinsPorAula[a.id] || [];
+      const nomesHtml = lista.length
+        ? '<div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">' +
+          lista.map(c=>{
+            const s = statusInfo[c.status];
+            const nome = c.alunos ? c.alunos.nome : '—';
+            return '<span class="pill" style="background:' + s.bg + '; color:' + s.color + ';">' + nome + ' · ' + s.label + '</span>';
+          }).join('') + '</div>'
+        : '<div class="empty-note" style="padding:6px 0 0 0;">Nenhum check-in feito ainda para esta aula.</div>';
+      const confirmadosCount = lista.filter(c=>c.status==='confirmado').length;
+      return '<div class="card"><span class="pill ' + pillClass(a.nivel) + '">' + a.nivel + '</span>' +
+        '<div style="font-weight:700; margin-top:10px;">' + nomeDiaSemana(a.data) + '-feira · ' + formatarDataBR(a.data) + ' · ' + a.hora + '</div>' +
+        '<div style="font-size:12.5px; color:var(--ink-soft); margin-top:2px;">' + a.quadra + ' · ' + a.tipo + '</div>' +
+        '<div style="font-size:12.5px; font-weight:700; color:var(--navy); margin-top:10px;">' + lista.length + ' check-in(s) · ' + confirmadosCount + ' confirmado(s)</div>' +
+        nomesHtml + '</div>';
+    }).join('') : '<p class="empty-note">Nenhuma turma atribuída ainda.</p>';
+  }
+
+  const pendentes = [];
+  Object.keys(checkinsPorAula).forEach(aid=>{
+    checkinsPorAula[aid].filter(c=>c.status==='pendente').forEach(c=>{
+      pendentes.push(Object.assign({}, c, {aula: (aulas||[]).find(a=>a.id==aid)}));
+    });
+  });
+  const elPend = document.getElementById(prefixo + '-pendentes');
+  if(elPend){
+    elPend.innerHTML = pendentes.length ? pendentes.map(c=>{
+      const nome = c.alunos ? c.alunos.nome : '—';
+      const iniciais = c.alunos ? iniciaisDe(c.alunos.nome) : '?';
+      return '<div class="student-row"><div style="display:flex; align-items:center; gap:12px;">' +
+        '<div class="avatar">' + iniciais + '</div><div>' +
+        '<div style="font-weight:700; font-size:14px;">' + nome + '</div>' +
+        '<div style="font-size:12px; color:var(--ink-soft);">' + nomeDiaSemana(c.aula.data) + '-feira ' + formatarDataBR(c.aula.data) + ' ' + c.aula.hora + ' · ' + c.aula.tipo +
+        ' <span class="pill pill-pendente" style="margin-left:6px;">Pendente</span></div></div></div>' +
+        '<div style="display:flex; gap:8px;">' +
+        '<button class="btn btn-primary btn-sm" onclick="confirmarPresenca(' + c.id + ',' + c.aluno_id + ')">Confirmar presença</button>' +
+        '<button class="btn btn-outline btn-sm" onclick="marcarFalta(' + c.id + ',' + c.aluno_id + ')">Marcar falta</button></div></div>';
+    }).join('') : '<p class="empty-note">Nenhum check-in aguardando confirmação no momento.</p>';
+  }
+}
+
+/* ---------------- "Área do Professor" dentro do Admin ---------------- */
+async function popularSelectAdminProfessor(professores){
+  const sel = document.getElementById('admin-prof-select');
+  if(!sel) return;
+  const atual = sel.value;
+  sel.innerHTML = professores.map(p=>'<option value="' + p.id + '">' + p.nome + '</option>').join('');
+  if(atual) sel.value = atual;
+  if(sel.value) await renderAdminComoProfessor();
+}
+async function renderAdminComoProfessor(){
+  const sel = document.getElementById('admin-prof-select');
+  if(!sel || !sel.value) return;
+  await renderTurmasEPendentes(parseInt(sel.value), 'admin-prof');
+}
+
+async function confirmarPresenca(checkinId, alunoId){
+  await sb.from('checkins').update({status:'confirmado'}).eq('id', checkinId);
+  const { data: aluno } = await sb.from('alunos').select('pontos, nome').eq('id', alunoId).single();
+  await sb.from('alunos').update({ pontos: aluno.pontos + PONTOS_POR_PRESENCA }).eq('id', alunoId);
+  showToast('Presença de ' + aluno.nome + ' confirmada — +' + PONTOS_POR_PRESENCA + ' ponto');
+  await refrescarContextoProfessor();
+}
+async function marcarFalta(checkinId, alunoId){
+  await sb.from('checkins').update({status:'falta'}).eq('id', checkinId);
+  const { data: aluno } = await sb.from('alunos').select('pontos, nome').eq('id', alunoId).single();
+  await sb.from('alunos').update({ pontos: Math.max(aluno.pontos - PONTOS_POR_FALTA, 0) }).eq('id', alunoId);
+  showToast('Falta registrada para ' + aluno.nome + ' — -' + PONTOS_POR_FALTA + ' ponto');
+  await refrescarContextoProfessor();
+}
+async function refrescarContextoProfessor(){
+  if(currentUser.role==='professor'){ await renderProfessorView(); }
+  else if(currentUser.role==='admin'){ await renderAdminComoProfessor(); }
+}
+
+/* ======================================================================
+   ÁREA DO ADMINISTRADOR
+   ====================================================================== */
+async function renderAdminView(){
+  const [{data: aulas}, {data: alunos}, {data: professores}, {data: financeiro}, {data: avaliacoes}, {data: checkins}] = await Promise.all([
+    sb.from('aulas').select('*, professores(id,nome)').order('data').order('hora'),
+    sb.from('alunos').select('*').order('nome'),
+    sb.from('professores').select('*').order('nome'),
+    sb.from('financeiro').select('*, alunos(nome)'),
+    sb.from('avaliacoes_professor').select('*'),
+    sb.from('checkins').select('*')
+  ]);
+
+  window._adminCache = { aulas: aulas||[], alunos: alunos||[], professores: professores||[], financeiro: financeiro||[], avaliacoes: avaliacoes||[], checkins: checkins||[] };
+  renderCalendarioSemanal(window._adminCache.aulas, 'admin-calendario');
+  renderCalendarioSemanal(window._adminCache.aulas, 'admin-calendario-dashboard');
+  renderAdminAulasTable(window._adminCache.aulas);
+  renderAdminProfessoresLista(window._adminCache.professores, window._adminCache.aulas);
+  renderAdminDistribuicao(window._adminCache.alunos);
+  renderAdminAvaliacoes(window._adminCache.professores, window._adminCache.avaliacoes);
+  renderAdminAlunosTable(window._adminCache.alunos);
+  renderAdminPromocaoTable(window._adminCache.alunos);
+  renderAdminFinanceiroTable(window._adminCache.financeiro);
+  renderRelatorioSelect(window._adminCache.alunos);
+  popularSelectRelatorioProfessor(window._adminCache.professores);
+  popularSelectProfessores(window._adminCache.professores);
+  await popularSelectAdminProfessor(window._adminCache.professores);
+  await renderCaixa();
+
+  document.getElementById('admin-total-alunos').textContent = window._adminCache.alunos.filter(a=>a.status==='ativo').length;
+  document.getElementById('admin-checkins-hoje').textContent = window._adminCache.checkins.filter(c=>c.status==='confirmado').length;
+}
+
+function renderCalendarioSemanal(aulas, elId){
+  elId = elId || 'admin-calendario';
+  const el = document.getElementById(elId);
+  if(!el) return;
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const colunas = [];
+  for(let i=0;i<7;i++){ const d=new Date(hoje); d.setDate(d.getDate()+i); colunas.push(d.toISOString().slice(0,10)); }
+  el.innerHTML = colunas.map(iso=>{
+    const doDia = aulas.filter(a=>a.data===iso).sort((x,y)=>x.hora.localeCompare(y.hora));
+    const blocos = doDia.length ? doDia.map(a=>
+      '<div class="cal-class ' + pillClass(a.nivel).replace('pill-','nivel-') + '">' +
+      '<div class="hora">' + a.hora + ' · ' + a.quadra + '</div>' +
+      '<div class="det">' + a.nivel + ' · ' + a.tipo + '</div>' +
+      '<div class="det">' + (a.professores?a.professores.nome:'—') + '</div></div>'
+    ).join('') : '<div class="cal-empty">Sem aulas</div>';
+    return '<div class="cal-day' + (iso===colunas[0]?' cal-day-hoje':'') + '"><div class="cal-day-header">' + diaCurtoDeData(iso) + '<br><span style="font-weight:400; font-size:11px;">' + formatarDataBR(iso) + '</span></div>' + blocos + '</div>';
+  }).join('');
+}
+
+function renderAdminAulasTable(aulas){
+  document.querySelector('#admin-aulas-table tbody').innerHTML = aulas.map(a=>
+    '<tr><td>' + formatarDataBR(a.data) + ' <span style="color:var(--ink-soft); font-size:11.5px;">(' + nomeDiaSemana(a.data) + ')</span></td>' +
+    '<td>' + a.hora + '</td><td>' + a.quadra + '</td>' +
+    '<td><span class="pill ' + pillClass(a.nivel) + '">' + a.nivel + '</span></td>' +
+    '<td>' + a.tipo + '</td><td>' + (a.professores?a.professores.nome:'—') + '</td><td>' + a.capacidade + '</td>' +
+    '<td class="td-actions"><button class="btn btn-sm btn-ghost" onclick="editarAula(' + a.id + ')">Editar</button>' +
+    '<button class="btn btn-sm btn-danger" onclick="excluirAula(' + a.id + ')">Excluir</button></td></tr>'
+  ).join('');
+}
+function renderAdminProfessoresLista(professores, aulas){
+  document.getElementById('admin-professores-lista').innerHTML = professores.map(p=>
+    '<div class="student-row"><div style="display:flex; align-items:center; gap:12px;">' +
+    '<div class="avatar">' + p.nome.split(' ').map(x=>x[0]).join('').slice(0,2) + '</div><div>' +
+    '<div style="font-weight:700; font-size:14px;">' + p.nome + '</div>' +
+    '<div style="font-size:12px; color:var(--ink-soft);">Login: ' + p.login + '</div></div></div>' +
+    '<span class="pill" style="background:#EFEAD9;">' + aulas.filter(a=>a.professor_id===p.id).length + ' turmas</span></div>'
+  ).join('');
+}
+function renderAdminDistribuicao(alunos){
+  document.getElementById('admin-distribuicao').innerHTML = NIVEIS.map(n=>{
+    const qtd = alunos.filter(a=>a.nivel===n && a.status==='ativo').length;
+    return '<div class="card"><span class="pill ' + pillClass(n) + '">' + n + '</span><div class="display" style="font-size:28px; margin-top:10px;">' + qtd + '</div></div>';
+  }).join('');
+}
+function renderAdminAvaliacoes(professores, avaliacoes){
+  document.getElementById('admin-avaliacao-professores').innerHTML = professores.map(p=>{
+    const notas = avaliacoes.filter(a=>a.professor_id===p.id).map(a=>a.estrelas);
+    const media = notas.length ? (notas.reduce((s,n)=>s+n,0)/notas.length) : 0;
+    const cheias = Math.round(media);
+    const starsHtml = [1,2,3,4,5].map(n=>'<span style="opacity:' + (n<=cheias?1:0.25) + ';">★</span>').join('');
+    return '<div class="rating-summary" style="padding:10px 0; border-bottom:1px solid var(--line);">' +
+      '<div><div style="font-weight:700; font-size:14px;">' + p.nome + '</div><div style="font-size:12px; color:var(--ink-soft);">' + notas.length + ' avaliações recebidas</div></div>' +
+      '<div style="text-align:right;"><div class="stars-static">' + starsHtml + '</div><div style="font-size:12.5px; color:var(--ink-soft);">' + (notas.length?media.toFixed(1):'—') + ' / 5.0</div></div></div>';
+  }).join('');
+}
+function renderAdminAlunosTable(alunos){
+  document.getElementById('admin-alunos-table').innerHTML = alunos.map(a=>
+    '<tr><td>' + a.nome + '</td><td><span class="pill ' + pillClass(a.nivel) + '">' + a.nivel + '</span></td>' +
+    '<td>' + a.pontos + ' aulas</td>' +
+    '<td><span class="pill ' + (a.status==='ativo'?'pill-ativo':'pill-inativo') + '">' + (a.status==='ativo'?'Ativo':'Inativo') + '</span></td>' +
+    '<td class="td-actions">' +
+    '<button class="btn btn-sm btn-ghost" onclick="editarAluno(' + a.id + ')">Editar</button>' +
+    '<button class="btn btn-sm btn-outline" onclick="alternarStatusAluno(' + a.id + ',\'' + a.status + '\')">' + (a.status==='ativo'?'Deixar inativo':'Reativar') + '</button>' +
+    '<button class="btn btn-sm btn-outline" onclick="abrirAjustePontos(' + a.id + ')">Pontos</button>' +
+    '<button class="btn btn-sm btn-danger" onclick="excluirAluno(' + a.id + ')">Excluir</button></td></tr>'
+  ).join('');
+}
+function renderAdminPromocaoTable(alunos){
+  const candidatos = alunos.filter(a=>NIVEIS.indexOf(a.nivel) < NIVEIS.length-1 && a.status==='ativo');
+  document.getElementById('admin-promocao-table').innerHTML = candidatos.length ? candidatos.map(a=>{
+    const proximo = NIVEIS[NIVEIS.indexOf(a.nivel)+1];
+    const meta = META_NIVEL[proximo];
+    const elegivel = a.pontos >= meta;
+    return '<tr><td>' + a.nome + '</td><td>' + a.nivel + '</td><td>' + a.pontos + ' aulas</td>' +
+      '<td>' + (elegivel?'✅ Apto para teste':(a.pontos+'/'+meta)) + '</td>' +
+      '<td><button class="btn btn-sm ' + (elegivel?'btn-primary':'btn-ghost') + '" ' + (elegivel?'':'disabled') + ' onclick="promover(' + a.id + ',\'' + a.nivel + '\')">Promover</button></td>' +
+      '<td><button class="btn btn-sm btn-outline" onclick="abrirAjustePontos(' + a.id + ')">Ajustar pontos</button></td></tr>';
+  }).join('') : '<tr><td colspan="6" class="empty-note">Nenhum aluno pendente de promoção.</td></tr>';
+}
+function renderAdminFinanceiroTable(financeiro){
+  document.getElementById('admin-financeiro-table').innerHTML = financeiro.map(f=>
+    '<tr><td>' + (f.alunos?f.alunos.nome:'—') + '</td><td>' + (f.plano||'—') + '</td><td>R$ ' + f.valor + '</td><td>' + (f.vencimento||'—') + '</td>' +
+    '<td><span class="fin-status ' + f.status + '">' + (f.status==='pago'?'Pago':'Pendente') + '</span></td>' +
+    '<td>' + (f.status==='pendente' ? '<button class="btn btn-sm btn-ghost" onclick="marcarPago(' + f.id + ')">Marcar como pago</button>' : '') + '</td></tr>'
+  ).join('');
+  document.getElementById('fin-inadimplentes').textContent = financeiro.filter(f=>f.status==='pendente').length;
+}
+function renderRelatorioSelect(alunos){
+  const sel = document.getElementById('rel-aluno-select');
+  const atual = sel.value;
+  sel.innerHTML = alunos.map(a=>'<option value="' + a.id + '">' + a.nome + '</option>').join('');
+  if(atual) sel.value = atual;
+  if(sel.value) gerarRelatorio();
+}
+function popularSelectRelatorioProfessor(professores){
+  const sel = document.getElementById('rel-prof-select');
+  const atual = sel.value;
+  sel.innerHTML = professores.map(p=>'<option value="' + p.id + '">' + p.nome + '</option>').join('');
+  if(atual) sel.value = atual;
+
+  // define um período padrão (últimos 30 dias) só na primeira vez, sem sobrescrever o que o usuário já escolheu
+  const inicioEl = document.getElementById('rel-prof-inicio');
+  const fimEl = document.getElementById('rel-prof-fim');
+  if(!fimEl.value){
+    const hoje = new Date();
+    const trintaDiasAtras = new Date(); trintaDiasAtras.setDate(hoje.getDate()-30);
+    fimEl.value = hoje.toISOString().slice(0,10);
+    inicioEl.value = trintaDiasAtras.toISOString().slice(0,10);
+  }
+  if(sel.value) gerarRelatorioProfessor();
+}
+async function gerarRelatorioProfessor(){
+  const sel = document.getElementById('rel-prof-select');
+  const profId = parseInt(sel.value);
+  const el = document.getElementById('relatorio-professor-conteudo');
+  if(!profId){ el.innerHTML=''; return; }
+
+  const inicio = document.getElementById('rel-prof-inicio').value;
+  const fim = document.getElementById('rel-prof-fim').value;
+
+  const { data: prof } = await sb.from('professores').select('*').eq('id', profId).single();
+
+  let query = sb.from('aulas').select('*').eq('professor_id', profId);
+  if(inicio) query = query.gte('data', inicio);
+  if(fim) query = query.lte('data', fim);
+  const { data: aulas } = await query;
+  const aulaIds = (aulas||[]).map(a=>a.id);
+
+  let confirmados = 0, faltas = 0;
+  if(aulaIds.length){
+    const { data: cks } = await sb.from('checkins').select('status').in('aula_id', aulaIds);
+    confirmados = (cks||[]).filter(c=>c.status==='confirmado').length;
+    faltas = (cks||[]).filter(c=>c.status==='falta').length;
+  }
+
+  const { data: avals } = await sb.from('avaliacoes_professor').select('estrelas, criado_em').eq('professor_id', profId);
+  const avalsNoPeriodo = (avals||[]).filter(a=>{
+    const d = a.criado_em ? a.criado_em.slice(0,10) : null;
+    if(!d) return false;
+    if(inicio && d < inicio) return false;
+    if(fim && d > fim) return false;
+    return true;
+  });
+  const mediaAvaliacao = avalsNoPeriodo.length ? (avalsNoPeriodo.reduce((s,a)=>s+a.estrelas,0)/avalsNoPeriodo.length).toFixed(1) : '—';
+
+  el.innerHTML = '<div class="report-box">' +
+    '<div class="display" style="font-size:22px; color:var(--navy);">' + prof.nome + '</div>' +
+    '<div class="report-row"><span>Período analisado</span><strong>' + (inicio?formatarDataBR(inicio):'início') + ' até ' + (fim?formatarDataBR(fim):'hoje') + '</strong></div>' +
+    '<div class="report-row"><span>Aulas dadas no período</span><strong>' + (aulas?aulas.length:0) + '</strong></div>' +
+    '<div class="report-row"><span>Presenças confirmadas nas turmas</span><strong>' + confirmados + '</strong></div>' +
+    '<div class="report-row"><span>Faltas registradas nas turmas</span><strong>' + faltas + '</strong></div>' +
+    '<div class="report-row"><span>Avaliação média no período</span><strong>' + mediaAvaliacao + (avalsNoPeriodo.length ? (' / 5.0 (' + avalsNoPeriodo.length + ' avaliações)') : '') + '</strong></div>' +
+    '</div>';
+}
+function popularSelectProfessores(professores){
+  const sel = document.getElementById('f-professor');
+  const atual = sel.value;
+  sel.innerHTML = professores.map(p=>'<option value="' + p.id + '">' + p.nome + '</option>').join('');
+  if(atual) sel.value = atual;
+}
+
+async function marcarPago(financeiroId){
+  await sb.from('financeiro').update({status:'pago'}).eq('id', financeiroId);
+  const fin = window._adminCache.financeiro.find(f=>f.id===financeiroId);
+  const nomeAluno = fin && fin.alunos ? fin.alunos.nome : 'aluno';
+  await sb.from('caixa').insert({
+    tipo: 'entrada',
+    valor: fin ? fin.valor : 0,
+    descricao: 'Mensalidade — ' + nomeAluno,
+    origem: 'mensalidade',
+    financeiro_id: financeiroId,
+    data: new Date().toISOString().slice(0,10)
+  });
+  showToast('Mensalidade marcada como paga — entrada lançada no caixa.');
+  await renderAdminView();
+}
+
+/* ---------------- CAIXA ---------------- */
+async function renderCaixa(){
+  const elTable = document.getElementById('caixa-table');
+  if(!elTable) return;
+  const { data: lancamentos } = await sb.from('caixa').select('*').order('data', {ascending:false}).order('id', {ascending:false});
+  const lista = lancamentos || [];
+
+  const entradas = lista.filter(l=>l.tipo==='entrada').reduce((s,l)=>s+Number(l.valor),0);
+  const saidas = lista.filter(l=>l.tipo==='saida').reduce((s,l)=>s+Number(l.valor),0);
+  document.getElementById('caixa-entradas').textContent = 'R$ ' + entradas.toFixed(2);
+  document.getElementById('caixa-saidas').textContent = 'R$ ' + saidas.toFixed(2);
+  document.getElementById('caixa-saldo').textContent = 'R$ ' + (entradas - saidas).toFixed(2);
+
+  elTable.innerHTML = lista.length ? lista.map(l=>
+    '<tr><td>' + formatarDataBR(l.data) + '</td>' +
+    '<td><span class="pill" style="background:' + (l.tipo==='entrada'?'#DFEFE6':'#F3E1DE') + '; color:' + (l.tipo==='entrada'?'var(--success)':'var(--danger)') + ';">' + (l.tipo==='entrada'?'Entrada':'Saída') + '</span></td>' +
+    '<td>' + (l.descricao||'—') + '</td>' +
+    '<td>' + (l.origem==='mensalidade'?'Mensalidade (automático)':'Manual') + '</td>' +
+    '<td style="font-weight:700; color:' + (l.tipo==='entrada'?'var(--success)':'var(--danger)') + ';">' + (l.tipo==='entrada'?'+':'-') + ' R$ ' + Number(l.valor).toFixed(2) + '</td></tr>'
+  ).join('') : '<tr><td colspan="5" class="empty-note">Nenhum lançamento ainda.</td></tr>';
+}
+function abrirLancamentoCaixa(){
+  document.getElementById('cx-tipo').value = 'entrada';
+  document.getElementById('cx-valor').value = '';
+  document.getElementById('cx-descricao').value = '';
+  document.getElementById('cx-data').value = new Date().toISOString().slice(0,10);
+  openModal('modal-caixa');
+}
+async function salvarLancamentoCaixa(){
+  const tipo = document.getElementById('cx-tipo').value;
+  const valor = parseFloat(document.getElementById('cx-valor').value);
+  const descricao = document.getElementById('cx-descricao').value.trim();
+  const data = document.getElementById('cx-data').value;
+  if(!valor || valor <= 0){ showToast('Informe um valor válido'); return; }
+  const { error } = await sb.from('caixa').insert({ tipo, valor, descricao, data, origem:'manual' });
+  if(error){ showToast('Erro ao lançar: ' + error.message); console.error(error); return; }
+  closeModal('modal-caixa');
+  showToast('Lançamento registrado no caixa.');
+  await renderCaixa();
+}
+
+async function promover(alunoId, nivelAtual){
+  const proximo = NIVEIS[NIVEIS.indexOf(nivelAtual)+1];
+  await sb.from('alunos').update({nivel: proximo}).eq('id', alunoId);
+  showToast('Aluno promovido para ' + proximo + '!');
+  await renderAdminView();
+}
+
+let ajustePontosAlunoId = null;
+function abrirAjustePontos(alunoId){
+  ajustePontosAlunoId = alunoId;
+  const aluno = window._adminCache.alunos.find(a=>a.id===alunoId);
+  document.getElementById('ajuste-pontos-aluno-nome').textContent = aluno.nome + ' — atualmente com ' + aluno.pontos + ' aulas (' + aluno.nivel + ')';
+  document.getElementById('ajuste-pontos-valor').value = '';
+  document.getElementById('ajuste-pontos-motivo').value = '';
+  openModal('modal-pontos');
+}
+async function aplicarAjustePontos(){
+  const delta = parseInt(document.getElementById('ajuste-pontos-valor').value);
+  if(isNaN(delta)){ showToast('Informe um valor numérico de pontos'); return; }
+  const aluno = window._adminCache.alunos.find(a=>a.id===ajustePontosAlunoId);
+  const novoValor = Math.max(aluno.pontos + delta, 0);
+  await sb.from('alunos').update({pontos: novoValor}).eq('id', ajustePontosAlunoId);
+  closeModal('modal-pontos');
+  showToast('Pontuação ajustada manualmente (' + (delta>0?'+':'') + delta + ').');
+  await renderAdminView();
+}
+
+async function alternarStatusAluno(alunoId, statusAtual){
+  const novo = statusAtual==='ativo' ? 'inativo' : 'ativo';
+  await sb.from('alunos').update({status: novo}).eq('id', alunoId);
+  showToast('Status atualizado para ' + (novo==='ativo'?'ativo':'inativo') + '.');
+  await renderAdminView();
+}
+async function excluirAluno(alunoId){
+  const aluno = window._adminCache.alunos.find(a=>a.id===alunoId);
+  if(!confirm('Excluir o cadastro de ' + aluno.nome + '? Essa ação não pode ser desfeita.')) return;
+  await sb.from('alunos').delete().eq('id', alunoId);
+  showToast('Cadastro de ' + aluno.nome + ' excluído.');
+  await renderAdminView();
+}
+
+/* ---------------- cadastrar / editar aluno ---------------- */
+let editandoAlunoId = null;
+function sugerirPontosIniciais(){ document.getElementById('a-pontos').value = META_NIVEL[document.getElementById('a-nivel').value]; }
+function abrirCadastroAluno(){
+  editandoAlunoId = null;
+  document.getElementById('modal-aluno-titulo').textContent = 'Cadastrar aluno';
+  ['a-nome','a-whats','a-nasc','a-obs','a-valor','a-login','a-senha'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('a-nivel').value = 'Aprendiz';
+  document.getElementById('a-plano').value = 'Mensal';
+  document.getElementById('a-pontos').value = '0';
+  openModal('modal-aluno');
+}
+function editarAluno(alunoId){
+  const aluno = window._adminCache.alunos.find(a=>a.id===alunoId);
+  const fin = window._adminCache.financeiro.find(f=>f.aluno_id===alunoId);
+  editandoAlunoId = alunoId;
+  document.getElementById('modal-aluno-titulo').textContent = 'Editar aluno';
+  document.getElementById('a-nome').value = aluno.nome;
+  document.getElementById('a-nivel').value = aluno.nivel;
+  document.getElementById('a-pontos').value = aluno.pontos;
+  document.getElementById('a-login').value = aluno.login || '';
+  document.getElementById('a-senha').value = aluno.senha || '';
+  document.getElementById('a-valor').value = fin ? fin.valor : '';
+  document.getElementById('a-plano').value = fin ? fin.plano : 'Mensal';
+  document.getElementById('a-whats').value = aluno.whatsapp || '';
+  document.getElementById('a-nasc').value = aluno.data_nascimento || '';
+  document.getElementById('a-obs').value = aluno.observacoes || '';
+  openModal('modal-aluno');
+}
+async function salvarAluno(){
+  const nome = document.getElementById('a-nome').value.trim();
+  if(!nome){ showToast('Informe o nome do aluno'); return; }
+  const nivel = document.getElementById('a-nivel').value;
+  const pontos = parseInt(document.getElementById('a-pontos').value) || 0;
+  const valor = document.getElementById('a-valor').value.trim();
+  const plano = document.getElementById('a-plano').value;
+  const login = document.getElementById('a-login').value.trim().toLowerCase();
+  const senha = document.getElementById('a-senha').value.trim();
+  const whats = document.getElementById('a-whats').value.trim();
+  const nasc = document.getElementById('a-nasc').value.trim() || null;
+  const obs = document.getElementById('a-obs').value.trim();
+
+  if(!login || !senha){ showToast('Preencha login e senha de acesso'); return; }
+
+  if(editandoAlunoId){
+    await sb.from('alunos').update({
+      nome, nivel, pontos, login, senha,
+      whatsapp: whats, data_nascimento: nasc, observacoes: obs
+    }).eq('id', editandoAlunoId);
+    const fin = window._adminCache.financeiro.find(f=>f.aluno_id===editandoAlunoId);
+    if(fin){ await sb.from('financeiro').update({ valor: valor||0, plano }).eq('id', fin.id); }
+    closeModal('modal-aluno');
+    showToast('Cadastro de ' + nome + ' atualizado.');
+  } else {
+    const { data: novoAluno, error } = await sb.from('alunos').insert({
+      nome, nivel, pontos, status:'ativo', login, senha,
+      whatsapp: whats, data_nascimento: nasc, observacoes: obs
+    }).select().single();
+    if(error){
+      showToast('Erro ao cadastrar: ' + error.message);
+      console.error('Erro ao cadastrar aluno:', error);
+      return;
+    }
+    await sb.from('financeiro').insert({ aluno_id: novoAluno.id, valor: valor||0, plano, status:'pendente' });
+    closeModal('modal-aluno');
+    showToast(nome + ' cadastrado com sucesso! Login: ' + login);
+  }
+  await renderAdminView();
+}
+
+/* ---------------- cadastrar professor ---------------- */
+function abrirCadastroProfessor(){
+  ['p-nome','p-whats','p-login','p-senha'].forEach(id=>document.getElementById(id).value='');
+  openModal('modal-professor');
+}
+async function salvarProfessor(){
+  const nome = document.getElementById('p-nome').value.trim();
+  if(!nome){ showToast('Informe o nome do professor'); return; }
+  const login = document.getElementById('p-login').value.trim().toLowerCase();
+  const senha = document.getElementById('p-senha').value.trim();
+  const whats = document.getElementById('p-whats').value.trim();
+  if(!login || !senha){ showToast('Preencha login e senha de acesso'); return; }
+  const { error } = await sb.from('professores').insert({ nome, whatsapp: whats, login, senha });
+  if(error){
+    showToast('Erro ao cadastrar: ' + error.message);
+    console.error('Erro ao cadastrar professor:', error);
+    return;
+  }
+  closeModal('modal-professor');
+  showToast(nome + ' cadastrado como professor! Login: ' + login);
+  await renderAdminView();
+}
+
+/* ---------------- cadastrar / editar / excluir aula ---------------- */
+let editandoAulaId = null;
+function abrirCadastroAula(){
+  editandoAulaId = null;
+  document.getElementById('modal-aula-titulo').textContent = 'Nova aula';
+  document.getElementById('f-data').value = new Date().toISOString().slice(0,10);
+  document.getElementById('f-horario').value = '';
+  document.getElementById('f-quadra').value = 'Quadra 1';
+  document.getElementById('f-nivel').value = 'Aprendiz';
+  document.getElementById('f-tipo').value = '';
+  document.getElementById('f-vagas').value = '';
+  openModal('modal-aula');
+}
+function editarAula(aulaId){
+  const aula = window._adminCache.aulas.find(a=>a.id===aulaId);
+  editandoAulaId = aulaId;
+  document.getElementById('modal-aula-titulo').textContent = 'Editar aula';
+  document.getElementById('f-data').value = aula.data;
+  document.getElementById('f-horario').value = aula.hora;
+  document.getElementById('f-quadra').value = aula.quadra;
+  document.getElementById('f-nivel').value = aula.nivel;
+  document.getElementById('f-tipo').value = aula.tipo;
+  document.getElementById('f-vagas').value = aula.capacidade;
+  document.getElementById('f-professor').value = aula.professor_id;
+  openModal('modal-aula');
+}
+async function excluirAula(aulaId){
+  const aula = window._adminCache.aulas.find(a=>a.id===aulaId);
+  if(!confirm('Excluir a aula de ' + formatarDataBR(aula.data) + ' (' + nomeDiaSemana(aula.data) + '-feira) ' + aula.hora + '? Isso também remove os check-ins vinculados a ela.')) return;
+  await sb.from('aulas').delete().eq('id', aulaId);
+  showToast('Aula excluída.');
+  await renderAdminView();
+}
+async function salvarAula(){
+  const dataAula = document.getElementById('f-data').value;
+  if(!dataAula){ showToast('Selecione a data da aula'); return; }
+  const vagas = parseInt(document.getElementById('f-vagas').value) || 12;
+  const tipo = document.getElementById('f-tipo').value.trim() || 'Aula geral';
+  const professorId = parseInt(document.getElementById('f-professor').value);
+  const dados = {
+    data: dataAula, hora: document.getElementById('f-horario').value || '00:00',
+    quadra: document.getElementById('f-quadra').value, nivel: document.getElementById('f-nivel').value,
+    tipo, professor_id: professorId, capacidade: vagas
+  };
+  if(editandoAulaId){
+    await sb.from('aulas').update(dados).eq('id', editandoAulaId);
+    closeModal('modal-aula');
+    showToast('Aula atualizada — mudanças já refletidas para alunos e professor.');
+  } else {
+    await sb.from('aulas').insert(dados);
+    closeModal('modal-aula');
+    showToast('Aula cadastrada — já aparece para os alunos do nível e para o professor responsável.');
+  }
+  await renderAdminView();
+}
+
+/* ---------------- relatório ---------------- */
+async function gerarRelatorio(){
+  const sel = document.getElementById('rel-aluno-select');
+  const id = parseInt(sel.value);
+  const el = document.getElementById('relatorio-conteudo');
+  if(!id){ el.innerHTML=''; return; }
+
+  const { data: aluno } = await sb.from('alunos').select('*').eq('id', id).single();
+  if(!aluno){ el.innerHTML = '<p class="empty-note">Aluno não encontrado.</p>'; return; }
+
+  const { data: meusCheckins } = await sb.from('checkins').select('status').eq('aluno_id', id);
+  const confirmadas = (meusCheckins||[]).filter(c=>c.status==='confirmado').length;
+  const faltas = (meusCheckins||[]).filter(c=>c.status==='falta').length;
+  const total = confirmadas + faltas;
+  const pct = total ? Math.round((confirmadas/total)*100) : 0;
+  const { data: fin } = await sb.from('financeiro').select('*').eq('aluno_id', id).order('id', {ascending:false}).limit(1).maybeSingle();
+
+  el.innerHTML = '<div class="report-box">' +
+    '<div class="flex-between"><div>' +
+    '<div class="display" style="font-size:24px; color:var(--navy);">' + aluno.nome + '</div>' +
+    '<span class="pill ' + pillClass(aluno.nivel) + '">' + aluno.nivel + '</span>' +
+    '<span class="pill ' + (aluno.status==='ativo'?'pill-ativo':'pill-inativo') + '">' + (aluno.status==='ativo'?'Ativo':'Inativo') + '</span></div>' +
+    '<button class="btn btn-outline btn-sm" onclick="window.print()">Imprimir / Exportar PDF</button></div>' +
+    '<div class="net-divider" style="margin:20px 0 10px 0;"><span class="label">FREQUÊNCIA</span><div class="rope"></div></div>' +
+    '<div class="report-row"><span>Pontuação atual (aulas confirmadas)</span><strong>' + aluno.pontos + '</strong></div>' +
+    '<div class="report-row"><span>Presenças confirmadas (histórico total)</span><strong>' + confirmadas + '</strong></div>' +
+    '<div class="report-row"><span>Faltas registradas (histórico total)</span><strong>' + faltas + '</strong></div>' +
+    '<div class="report-row"><span>Percentual de comparecimento</span><strong>' + (total?pct+'%':'—') + '</strong></div>' +
+    '<div class="net-divider" style="margin:20px 0 10px 0;"><span class="label">FINANCEIRO</span><div class="rope"></div></div>' +
+    '<div class="report-row"><span>Plano</span><strong>' + (fin?fin.plano:'—') + '</strong></div>' +
+    '<div class="report-row"><span>Valor</span><strong>' + (fin?('R$ '+fin.valor):'—') + '</strong></div>' +
+    '<div class="report-row"><span>Status do pagamento</span><strong style="color:' + (fin&&fin.status==='pago'?'var(--success)':'var(--danger)') + ';">' + (fin?(fin.status==='pago'?'Pago':'Pendente'):'—') + '</strong></div>' +
+    '</div>';
+}
+
+/* ======================================================================
+   BACKUP E IMPORTAÇÃO
+   ====================================================================== */
+const TABELAS_BACKUP = ['administradores','professores','alunos','aulas','checkins','financeiro','avaliacoes_professor','caixa'];
+
+async function baixarBackup(){
+  showToast('Gerando backup, aguarde...');
+  const backup = { geradoEm: new Date().toISOString() };
+  for(const tabela of TABELAS_BACKUP){
+    const { data, error } = await sb.from(tabela).select('*');
+    if(error){ showToast('Erro ao ler ' + tabela + ': ' + error.message); console.error(error); return; }
+    backup[tabela] = data || [];
+  }
+  const blob = new Blob([JSON.stringify(backup, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'backup-escolinha-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Backup baixado com sucesso!');
+}
+
+async function importarBackup(){
+  const input = document.getElementById('backup-file-input');
+  const statusEl = document.getElementById('backup-import-status');
+  if(!input.files || !input.files[0]){ showToast('Selecione um arquivo de backup primeiro'); return; }
+
+  statusEl.textContent = 'Lendo arquivo...';
+  const texto = await input.files[0].text();
+  let backup;
+  try{ backup = JSON.parse(texto); } catch(e){ showToast('Arquivo inválido (não é um JSON válido)'); statusEl.textContent=''; return; }
+
+  // ordem importa: tabelas sem dependência primeiro, depois as que referenciam outras
+  const ordem = ['administradores','professores','alunos','aulas','checkins','financeiro','avaliacoes_professor','caixa'];
+  for(const tabela of ordem){
+    const registros = backup[tabela];
+    if(!registros || !registros.length) continue;
+    statusEl.textContent = 'Importando ' + tabela + ' (' + registros.length + ' registros)...';
+    const { error } = await sb.from(tabela).upsert(registros);
+    if(error){
+      statusEl.textContent = 'Erro ao importar ' + tabela + ': ' + error.message;
+      showToast('Erro ao importar ' + tabela + '. Veja detalhes abaixo do botão.');
+      console.error(error);
+      return;
+    }
+  }
+  statusEl.textContent = 'Importação concluída com sucesso!';
+  showToast('Backup importado com sucesso!');
+  await renderAdminView();
+}
+
+</script>
+</body>
+</html>
