@@ -593,7 +593,7 @@
 <!-- =================== MODAL CADASTRAR PROFESSOR =================== -->
 <div class="modal-bg" id="modal-professor">
   <div class="modal">
-    <h3>Cadastrar professor</h3>
+    <h3 id="modal-professor-titulo">Cadastrar professor</h3>
     <div class="field"><label>Nome completo</label><input type="text" id="p-nome" placeholder="ex: Coach Fernanda"></div>
     <div class="field"><label>WhatsApp</label><input type="text" id="p-whats" placeholder="ex: (91) 99999-9999"></div>
     <div class="net-divider" style="margin:18px 0 10px 0;"><span class="label">ACESSO AO SISTEMA</span><div class="rope"></div></div>
@@ -883,12 +883,25 @@ async function salvarTrocaSenha(){
 }
 
 async function fazerCheckin(aulaId){
+  const { data: existente } = await sb.from('checkins').select('id').eq('aula_id', aulaId).eq('aluno_id', currentUser.id);
+  if(existente && existente.length){
+    showToast('Você já fez check-in nesta aula.');
+    await renderAlunoView();
+    return;
+  }
   const { error } = await sb.from('checkins').insert({ aula_id: aulaId, aluno_id: currentUser.id, status: 'pendente' });
-  if(error){ showToast('Erro ao fazer check-in.'); console.error(error); return; }
+  if(error){ showToast('Erro ao fazer check-in: ' + error.message); console.error(error); return; }
   showToast('Check-in feito! Sua presença conta 1 ponto assim que o professor confirmar em quadra.');
   await renderAlunoView();
 }
 async function cancelarCheckin(checkinId, aulaId){
+  const { data: checkin } = await sb.from('checkins').select('status').eq('id', checkinId).single();
+  if(!checkin){ showToast('Check-in não encontrado.'); return; }
+  if(checkin.status !== 'pendente'){
+    showToast('Este check-in já foi confirmado ou marcado como falta pelo professor e não pode mais ser cancelado.');
+    await renderAlunoView();
+    return;
+  }
   const { data: aula } = await sb.from('aulas').select('*').eq('id', aulaId).single();
   if(minutosParaAula(aula) <= JANELA_CANCELAMENTO_MIN){
     showToast('Não é mais possível cancelar — faltam menos de 1h para a aula.');
@@ -1019,6 +1032,13 @@ async function renderAdminComoProfessor(){
 }
 
 async function confirmarPresenca(checkinId, alunoId){
+  const { data: checkin } = await sb.from('checkins').select('status').eq('id', checkinId).single();
+  if(!checkin){ showToast('Check-in não encontrado.'); return; }
+  if(checkin.status !== 'pendente'){
+    showToast('Este check-in já foi processado anteriormente (nenhum ponto duplicado foi somado).');
+    await refrescarContextoProfessor();
+    return;
+  }
   await sb.from('checkins').update({status:'confirmado'}).eq('id', checkinId);
   const { data: aluno } = await sb.from('alunos').select('pontos, nome').eq('id', alunoId).single();
   await sb.from('alunos').update({ pontos: aluno.pontos + PONTOS_POR_PRESENCA }).eq('id', alunoId);
@@ -1026,6 +1046,13 @@ async function confirmarPresenca(checkinId, alunoId){
   await refrescarContextoProfessor();
 }
 async function marcarFalta(checkinId, alunoId){
+  const { data: checkin } = await sb.from('checkins').select('status').eq('id', checkinId).single();
+  if(!checkin){ showToast('Check-in não encontrado.'); return; }
+  if(checkin.status !== 'pendente'){
+    showToast('Este check-in já foi processado anteriormente (nenhum ponto duplicado foi descontado).');
+    await refrescarContextoProfessor();
+    return;
+  }
   await sb.from('checkins').update({status:'falta'}).eq('id', checkinId);
   const { data: aluno } = await sb.from('alunos').select('pontos, nome').eq('id', alunoId).single();
   await sb.from('alunos').update({ pontos: Math.max(aluno.pontos - PONTOS_POR_FALTA, 0) }).eq('id', alunoId);
@@ -1033,8 +1060,10 @@ async function marcarFalta(checkinId, alunoId){
   await refrescarContextoProfessor();
 }
 async function refrescarContextoProfessor(){
+  // Recarrega TUDO relacionado à pontuação — evita qualquer tela desatualizada em outras
+  // abas depois de confirmar presença ou marcar falta.
   if(currentUser.role==='professor'){ await renderProfessorView(); }
-  else if(currentUser.role==='admin'){ await renderAdminComoProfessor(); }
+  else if(currentUser.role==='admin'){ await renderAdminView(); }
 }
 
 /* ======================================================================
@@ -1105,7 +1134,11 @@ function renderAdminProfessoresLista(professores, aulas){
     '<div class="avatar">' + p.nome.split(' ').map(x=>x[0]).join('').slice(0,2) + '</div><div>' +
     '<div style="font-weight:700; font-size:14px;">' + p.nome + '</div>' +
     '<div style="font-size:12px; color:var(--ink-soft);">Login: ' + p.login + '</div></div></div>' +
-    '<span class="pill" style="background:#EFEAD9;">' + aulas.filter(a=>a.professor_id===p.id).length + ' turmas</span></div>'
+    '<div class="td-actions" style="align-items:center;">' +
+    '<span class="pill" style="background:#EFEAD9;">' + aulas.filter(a=>a.professor_id===p.id).length + ' turmas</span>' +
+    '<button class="btn btn-sm btn-ghost" onclick="editarProfessor(' + p.id + ')">Editar</button>' +
+    '<button class="btn btn-sm btn-danger" onclick="excluirProfessor(' + p.id + ')">Excluir</button>' +
+    '</div></div>'
   ).join('');
 }
 function renderAdminDistribuicao(alunos){
@@ -1307,11 +1340,12 @@ function abrirAjustePontos(alunoId){
 async function aplicarAjustePontos(){
   const delta = parseInt(document.getElementById('ajuste-pontos-valor').value);
   if(isNaN(delta)){ showToast('Informe um valor numérico de pontos'); return; }
-  const aluno = window._adminCache.alunos.find(a=>a.id===ajustePontosAlunoId);
+  const { data: aluno } = await sb.from('alunos').select('pontos, nome').eq('id', ajustePontosAlunoId).single();
+  if(!aluno){ showToast('Aluno não encontrado.'); return; }
   const novoValor = Math.max(aluno.pontos + delta, 0);
   await sb.from('alunos').update({pontos: novoValor}).eq('id', ajustePontosAlunoId);
   closeModal('modal-pontos');
-  showToast('Pontuação ajustada manualmente (' + (delta>0?'+':'') + delta + ').');
+  showToast('Pontuação de ' + aluno.nome + ' ajustada manualmente (' + (delta>0?'+':'') + delta + ').');
   await renderAdminView();
 }
 
@@ -1400,9 +1434,42 @@ async function salvarAluno(){
 }
 
 /* ---------------- cadastrar professor ---------------- */
+let editandoProfessorId = null;
 function abrirCadastroProfessor(){
+  editandoProfessorId = null;
+  document.getElementById('modal-professor-titulo').textContent = 'Cadastrar professor';
   ['p-nome','p-whats','p-login','p-senha'].forEach(id=>document.getElementById(id).value='');
   openModal('modal-professor');
+}
+function editarProfessor(profId){
+  const prof = window._adminCache.professores.find(p=>p.id===profId);
+  if(!prof) return;
+  editandoProfessorId = profId;
+  document.getElementById('modal-professor-titulo').textContent = 'Editar professor';
+  document.getElementById('p-nome').value = prof.nome;
+  document.getElementById('p-whats').value = prof.whatsapp || '';
+  document.getElementById('p-login').value = prof.login || '';
+  document.getElementById('p-senha').value = prof.senha || '';
+  openModal('modal-professor');
+}
+async function excluirProfessor(profId){
+  const prof = window._adminCache.professores.find(p=>p.id===profId);
+  if(!prof) return;
+  const aulasVinculadas = window._adminCache.aulas.filter(a=>a.professor_id===profId);
+  const aviso = aulasVinculadas.length
+    ? 'Atenção: ' + prof.nome + ' tem ' + aulasVinculadas.length + ' aula(s) cadastrada(s). Excluir o professor vai excluir essas aulas também (e os check-ins vinculados a elas). Deseja continuar?'
+    : 'Excluir o cadastro de ' + prof.nome + '? Essa ação não pode ser desfeita.';
+  if(!confirm(aviso)) return;
+
+  if(aulasVinculadas.length){
+    const aulaIds = aulasVinculadas.map(a=>a.id);
+    await sb.from('checkins').delete().in('aula_id', aulaIds);
+    await sb.from('aulas').delete().in('id', aulaIds);
+  }
+  const { error } = await sb.from('professores').delete().eq('id', profId);
+  if(error){ showToast('Erro ao excluir: ' + error.message); console.error(error); return; }
+  showToast('Cadastro de ' + prof.nome + ' excluído.');
+  await renderAdminView();
 }
 async function salvarProfessor(){
   const nome = document.getElementById('p-nome').value.trim();
@@ -1411,14 +1478,26 @@ async function salvarProfessor(){
   const senha = document.getElementById('p-senha').value.trim();
   const whats = document.getElementById('p-whats').value.trim();
   if(!login || !senha){ showToast('Preencha login e senha de acesso'); return; }
-  const { error } = await sb.from('professores').insert({ nome, whatsapp: whats, login, senha });
-  if(error){
-    showToast('Erro ao cadastrar: ' + error.message);
-    console.error('Erro ao cadastrar professor:', error);
-    return;
+
+  if(editandoProfessorId){
+    const { error } = await sb.from('professores').update({ nome, whatsapp: whats, login, senha }).eq('id', editandoProfessorId);
+    if(error){
+      showToast('Erro ao atualizar: ' + error.message);
+      console.error('Erro ao editar professor:', error);
+      return;
+    }
+    closeModal('modal-professor');
+    showToast('Cadastro de ' + nome + ' atualizado.');
+  } else {
+    const { error } = await sb.from('professores').insert({ nome, whatsapp: whats, login, senha });
+    if(error){
+      showToast('Erro ao cadastrar: ' + error.message);
+      console.error('Erro ao cadastrar professor:', error);
+      return;
+    }
+    closeModal('modal-professor');
+    showToast(nome + ' cadastrado como professor! Login: ' + login);
   }
-  closeModal('modal-professor');
-  showToast(nome + ' cadastrado como professor! Login: ' + login);
   await renderAdminView();
 }
 
