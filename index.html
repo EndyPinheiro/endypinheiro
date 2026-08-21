@@ -242,6 +242,11 @@
 
   <div class="wrap">
     <section class="block">
+      <div class="net-divider"><span class="label">SITUAÇÃO FINANCEIRA</span><div class="rope"></div></div>
+      <div class="card" id="aluno-financeiro"></div>
+    </section>
+
+    <section class="block">
       <div class="net-divider">
         <span class="label" id="aluno-classes-label">SUAS AULAS · NÍVEL INICIANTE</span>
         <div class="rope"></div>
@@ -326,6 +331,11 @@
         <div class="card stat-card"><div class="num" id="admin-checkins-hoje">0</div><div class="lbl">Check-ins confirmados</div><div class="sub up">Total acumulado</div></div>
         <div class="card stat-card"><div class="num" id="admin-freq-media">—</div><div class="lbl">Frequência média</div><div class="sub">Baseado nos check-ins registrados</div></div>
         <div class="card stat-card"><div class="num" id="admin-em-risco-num">0</div><div class="lbl">Alunos em risco</div><div class="sub warn">Sem presença nos últimos 30 dias</div></div>
+      </div>
+
+      <div class="grid grid-2" style="margin-top:16px;">
+        <div class="card stat-card"><div class="num" id="admin-mensalidades-vencidas" style="color:var(--danger);">0</div><div class="lbl">Mensalidades vencidas</div><div class="sub warn">Pendentes com data de vencimento já passada</div></div>
+        <div></div>
       </div>
 
       <div class="net-divider"><span class="label">CALENDÁRIO · PRÓXIMOS 7 DIAS</span><div class="rope"></div></div>
@@ -450,6 +460,11 @@
 
       <div class="admin-tab-panel fin-subtab" id="subtab-caixa">
         <div class="net-divider"><span class="label">RESUMO DO CAIXA</span><div class="rope"></div></div>
+        <div class="grid grid-2">
+          <div class="field"><label>Data início</label><input type="date" id="caixa-filtro-inicio" onchange="renderCaixa()"></div>
+          <div class="field"><label>Data fim</label><input type="date" id="caixa-filtro-fim" onchange="renderCaixa()"></div>
+        </div>
+        <button class="btn btn-outline btn-sm" style="margin:-8px 0 16px 0;" onclick="limparFiltroCaixa()">Limpar filtro (ver tudo)</button>
         <div class="grid grid-3">
           <div class="card stat-card"><div class="num" id="caixa-entradas" style="color:var(--success);">R$ 0</div><div class="lbl">Entradas</div></div>
           <div class="card stat-card"><div class="num" id="caixa-saidas" style="color:var(--danger);">R$ 0</div><div class="lbl">Saídas</div></div>
@@ -462,7 +477,7 @@
         </div>
         <div class="card" style="overflow-x:auto;">
           <table>
-            <thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Origem</th><th>Valor</th></tr></thead>
+            <thead><tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Origem</th><th>Valor</th><th>Ações</th></tr></thead>
             <tbody id="caixa-table"></tbody>
           </table>
         </div>
@@ -528,7 +543,7 @@
       <label>Data da aula</label>
       <input type="date" id="f-data">
     </div>
-    <div class="field"><label>Horário</label><input type="text" id="f-horario" placeholder="ex: 19:00"></div>
+    <div class="field"><label>Horário</label><input type="time" id="f-horario"></div>
     <div class="field">
       <label>Quadra</label>
       <select id="f-quadra"><option>Quadra 1</option><option>Quadra 2</option><option>Quadra 3</option></select>
@@ -574,6 +589,7 @@
       <label>Tipo de plano</label>
       <select id="a-plano"><option>Mensal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option></select>
     </div>
+    <div class="field"><label>Vencimento da mensalidade</label><select id="a-dia-vencimento"><option value="1">Todo dia 1</option><option value="2">Todo dia 2</option><option value="3">Todo dia 3</option><option value="4">Todo dia 4</option><option value="5">Todo dia 5</option><option value="6">Todo dia 6</option><option value="7">Todo dia 7</option><option value="8">Todo dia 8</option><option value="9">Todo dia 9</option><option value="10">Todo dia 10</option><option value="11">Todo dia 11</option><option value="12">Todo dia 12</option><option value="13">Todo dia 13</option><option value="14">Todo dia 14</option><option value="15">Todo dia 15</option><option value="16">Todo dia 16</option><option value="17">Todo dia 17</option><option value="18">Todo dia 18</option><option value="19">Todo dia 19</option><option value="20">Todo dia 20</option><option value="21">Todo dia 21</option><option value="22">Todo dia 22</option><option value="23">Todo dia 23</option><option value="24">Todo dia 24</option><option value="25">Todo dia 25</option><option value="26">Todo dia 26</option><option value="27">Todo dia 27</option><option value="28">Todo dia 28</option><option value="29">Todo dia 29</option><option value="30">Todo dia 30</option><option value="31">Todo dia 31</option></select><div class="anon-note">O sistema calcula automaticamente se está vencida, comparando com o dia de hoje todo mês.</div></div>
     <div class="field"><label>Observações (opcional)</label><input type="text" id="a-obs" placeholder="ex: restrição no ombro direito"></div>
     <div class="net-divider" style="margin:18px 0 10px 0;"><span class="label">ACESSO AO SISTEMA</span><div class="rope"></div></div>
     <div class="field"><label>Login (usuário)</label><input type="text" id="a-login" placeholder="ex: rafael.costa"></div>
@@ -671,12 +687,73 @@ const NOMES_DIA_SEMANA = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta"
 const DIA_CURTO = {"Domingo":"DOM","Segunda":"SEG","Terça":"TER","Quarta":"QUA","Quinta":"QUI","Sexta":"SEX","Sábado":"SAB"};
 
 function nomeDiaSemana(dataStr){ if(!dataStr) return '—'; return NOMES_DIA_SEMANA[new Date(dataStr+'T00:00:00').getDay()]; }
+function nomeDiaCompleto(dataStr){
+  // "Segunda-feira" ... "Sexta-feira", mas "Sábado" e "Domingo" não levam "-feira"
+  const nome = nomeDiaSemana(dataStr);
+  return (nome === 'Sábado' || nome === 'Domingo') ? nome : nome + '-feira';
+}
 function diaCurtoDeData(dataStr){ return DIA_CURTO[nomeDiaSemana(dataStr)] || '—'; }
 function formatarDataBR(dataStr){ if(!dataStr) return '—'; const [y,m,d]=dataStr.split('-'); return d+'/'+m; }
+function horaNormalizada(hora){
+  if(!hora || hora==='—') return '00:00';
+  const partes = hora.split(':');
+  const h = (partes[0]||'0').padStart(2,'0');
+  const m = (partes[1]||'0').padStart(2,'0');
+  return h + ':' + m;
+}
+
+/* Vencimento recorrente ("todo dia X"): calcula o dia de vencimento deste mês
+   (ajustando para o último dia do mês em fevereiro, por exemplo) e se já venceu. */
+function diaVencimentoNesteMes(diaVencimento){
+  if(!diaVencimento) return null;
+  const hoje = new Date();
+  const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).getDate();
+  return Math.min(diaVencimento, ultimoDiaMes);
+}
+/* Calcula quantos dias já se passaram desde a última data de vencimento (encontra a
+   ocorrência mais recente do "dia X", seja neste mês ou no mês anterior). Retorna 0 ou
+   negativo se ainda não venceu. */
+function diasVencido(diaVencimento){
+  if(!diaVencimento) return 0;
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const ano = hoje.getFullYear(), mes = hoje.getMonth();
+  const diaEsteMes = diaVencimentoNesteMes(diaVencimento);
+  let dataVenc;
+  if(hoje.getDate() >= diaEsteMes){
+    dataVenc = new Date(ano, mes, diaEsteMes);
+  } else {
+    const mesAnt = mes===0 ? 11 : mes-1;
+    const anoAnt = mes===0 ? ano-1 : ano;
+    const ultimoDiaAnt = new Date(anoAnt, mesAnt+1, 0).getDate();
+    dataVenc = new Date(anoAnt, mesAnt, Math.min(diaVencimento, ultimoDiaAnt));
+  }
+  return Math.floor((hoje - dataVenc) / 86400000);
+}
+function mensalidadeVencida(f){
+  if(f.status !== 'pendente' || !f.dia_vencimento) return false;
+  return diasVencido(f.dia_vencimento) > 0;
+}
 function pillClass(nivel){ return "pill-" + nivel.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+
+/* Calcula o nível "correto" pela pontuação, mas nunca ultrapassa o nível atual do aluno —
+   isto é: só serve para REBAIXAR automaticamente quando os pontos caem abaixo do mínimo do
+   nível em que ele está. Subir de nível continua sendo sempre uma decisão manual do admin. */
+async function sincronizarNivelPelosPontos(alunoId){
+  const { data: aluno } = await sb.from('alunos').select('pontos, nivel, nome').eq('id', alunoId).single();
+  if(!aluno) return;
+  const idxAtual = NIVEIS.indexOf(aluno.nivel);
+  let nivelCorreto = NIVEIS[0];
+  for(let i=0; i<=idxAtual; i++){
+    if(aluno.pontos >= META_NIVEL[NIVEIS[i]]) nivelCorreto = NIVEIS[i];
+  }
+  if(nivelCorreto !== aluno.nivel){
+    await sb.from('alunos').update({ nivel: nivelCorreto }).eq('id', alunoId);
+    showToast(aluno.nome + ' foi reclassificado automaticamente para ' + nivelCorreto + ' (pontuação abaixo do mínimo do nível anterior).');
+  }
+}
 function iniciaisDe(nome){ return nome.trim().split(/\s+/).slice(0,2).map(p=>p[0].toUpperCase()).join(''); }
 function minutosParaAula(aula){
-  const dt = new Date(aula.data + 'T' + aula.hora + ':00');
+  const dt = new Date(aula.data + 'T' + horaNormalizada(aula.hora) + ':00');
   return (dt - new Date()) / 60000;
 }
 
@@ -784,18 +861,45 @@ async function renderAlunoView(){
   const pillEl = document.getElementById('aluno-pill');
   pillEl.textContent = aluno.nivel;
   pillEl.className = 'pill ' + pillClass(aluno.nivel);
-  document.getElementById('aluno-classes-label').textContent = 'SUAS AULAS · NÍVEL ' + aluno.nivel.toUpperCase();
-
   const idxNivel = NIVEIS.indexOf(aluno.nivel);
+  const niveisPermitidos = NIVEIS.slice(0, idxNivel+1); // seu nível e todos os níveis abaixo
+  document.getElementById('aluno-classes-label').textContent = idxNivel > 0
+    ? 'SUAS AULAS · NÍVEL ' + aluno.nivel.toUpperCase() + ' E ABAIXO'
+    : 'SUAS AULAS · NÍVEL ' + aluno.nivel.toUpperCase();
+
   const proximoNivel = NIVEIS[idxNivel+1];
   document.getElementById('aluno-pts-atual').textContent = aluno.pontos + ' pontos';
   document.getElementById('aluno-pts-proximo').textContent = proximoNivel
     ? 'Faltam ' + Math.max(META_NIVEL[proximoNivel]-aluno.pontos,0) + ' aulas para o teste de ' + proximoNivel
     : 'Nível máximo atingido';
 
+  // situação financeira — bloqueia check-in se a mensalidade estiver vencida
+  const { data: fin } = await sb.from('financeiro').select('*').eq('aluno_id', aluno.id).order('id', {ascending:false}).limit(1).maybeSingle();
+  const vencida = fin ? mensalidadeVencida(fin) : false;
+  const elFin = document.getElementById('aluno-financeiro');
+  if(!fin){
+    elFin.innerHTML = '<p class="empty-note">Nenhuma informação financeira cadastrada ainda.</p>';
+  } else {
+    elFin.innerHTML =
+      '<div class="report-row"><span>Valor da mensalidade</span><strong>R$ ' + fin.valor + '</strong></div>' +
+      '<div class="report-row"><span>Vencimento</span><strong>' + (fin.dia_vencimento ? ('Todo dia ' + fin.dia_vencimento) : '—') + '</strong></div>' +
+      '<div class="report-row"><span>Status</span><strong style="color:' + (vencida ? 'var(--danger)' : 'var(--success)') + ';">' +
+        (vencida ? 'Vencida há ' + diasVencido(fin.dia_vencimento) + ' dia(s)' : (fin.status==='pago' ? 'Em dia (pago)' : 'Em dia')) +
+      '</strong></div>' +
+      (vencida ? '<p class="empty-note" style="color:var(--danger); margin-top:8px;">Regularize sua mensalidade com o administrador para voltar a fazer check-in nas aulas.</p>' : '');
+  }
+
   const hoje = new Date().toISOString().slice(0,10);
-  const { data: aulas } = await sb.from('aulas').select('*, professores(id,nome)').eq('nivel', aluno.nivel).gte('data', hoje).order('data').order('hora');
+  const { data: aulas } = await sb.from('aulas').select('*, professores(id,nome)').in('nivel', niveisPermitidos).gte('data', hoje).order('data').order('hora');
   const { data: meusCheckins } = await sb.from('checkins').select('*').eq('aluno_id', aluno.id);
+
+  // conta quantas vagas já estão ocupadas em cada aula (check-ins pendentes ou confirmados contam como vaga ocupada)
+  let ocupacaoPorAula = {};
+  const aulaIds = (aulas||[]).map(a=>a.id);
+  if(aulaIds.length){
+    const { data: todosCheckins } = await sb.from('checkins').select('aula_id, status').in('aula_id', aulaIds).in('status', ['pendente','confirmado']);
+    (todosCheckins||[]).forEach(c=>{ ocupacaoPorAula[c.aula_id] = (ocupacaoPorAula[c.aula_id]||0) + 1; });
+  }
 
   const el = document.getElementById('aluno-classes');
   if(!aulas || aulas.length===0){
@@ -804,8 +908,15 @@ async function renderAlunoView(){
     el.innerHTML = '<div class="classes-grid">' + aulas.map(a=>{
       const profNome = a.professores ? a.professores.nome : '—';
       const checkin = (meusCheckins||[]).find(c=>c.aula_id===a.id);
+      const ocupadas = ocupacaoPorAula[a.id] || 0;
+      const vagasRestantes = a.capacidade - ocupadas;
+      const lotada = vagasRestantes <= 0 && !checkin;
       let statusHtml;
-      if(!checkin){
+      if(!checkin && vencida){
+        statusHtml = '<button class="btn checkin-btn falta" disabled>Mensalidade vencida</button>';
+      } else if(lotada){
+        statusHtml = '<button class="btn checkin-btn falta" disabled>LOTADA</button>';
+      } else if(!checkin){
         statusHtml = '<button class="btn checkin-btn btn-primary" onclick="fazerCheckin(' + a.id + ')">Fazer check-in</button>';
       } else if(checkin.status==='confirmado'){
         statusHtml = '<button class="btn checkin-btn done" disabled>✓ Presença confirmada · +' + PONTOS_POR_PRESENCA + ' pt</button>';
@@ -830,8 +941,9 @@ async function renderAlunoView(){
       }
       return '<div class="class-card">' +
         '<div class="class-card-top"><div class="class-day">' + diaCurtoDeData(a.data) + '</div>' +
-        '<div class="class-info"><div class="t">' + nomeDiaSemana(a.data) + '-feira · ' + formatarDataBR(a.data) + '</div><div class="s">' + a.hora + ' · ' + a.quadra + '</div></div></div>' +
-        '<span class="class-tipo">' + a.tipo + '</span>' +
+        '<div class="class-info"><div class="t">' + nomeDiaCompleto(a.data) + ' · ' + formatarDataBR(a.data) + '</div><div class="s">' + a.hora + ' · ' + a.quadra + '</div></div></div>' +
+        '<div style="display:flex; flex-direction:column; gap:6px; align-items:flex-start;"><span class="pill ' + pillClass(a.nivel) + '">' + a.nivel + '</span><span class="class-tipo">' + a.tipo + '</span></div>' +
+        '<div style="font-weight:700; font-size:12.5px; color:' + (lotada?'var(--danger)':'var(--ink-soft)') + ';">' + (lotada ? 'Turma lotada' : (vagasRestantes + ' vaga(s) disponível(is) de ' + a.capacidade)) + '</div>' +
         '<div class="class-prof"><div class="mini-avatar">' + profNome.split(' ').map(p=>p[0]).join('').slice(0,2) + '</div>' +
         '<span>Professor: <strong style="color:var(--ink);">' + profNome + '</strong></span></div>' +
         statusHtml + avaliacaoHtml + '</div>';
@@ -878,9 +990,22 @@ async function salvarTrocaSenha(){
 }
 
 async function fazerCheckin(aulaId){
+  const { data: fin } = await sb.from('financeiro').select('*').eq('aluno_id', currentUser.id).order('id', {ascending:false}).limit(1).maybeSingle();
+  if(fin && mensalidadeVencida(fin)){
+    showToast('Sua mensalidade está vencida — regularize com o administrador para fazer check-in.');
+    await renderAlunoView();
+    return;
+  }
   const { data: existente } = await sb.from('checkins').select('id').eq('aula_id', aulaId).eq('aluno_id', currentUser.id);
   if(existente && existente.length){
     showToast('Você já fez check-in nesta aula.');
+    await renderAlunoView();
+    return;
+  }
+  const { data: aula } = await sb.from('aulas').select('capacidade').eq('id', aulaId).single();
+  const { data: ocupacao } = await sb.from('checkins').select('id').eq('aula_id', aulaId).in('status', ['pendente','confirmado']);
+  if(aula && (ocupacao||[]).length >= aula.capacidade){
+    showToast('Essa turma acabou de lotar. Escolha outro horário.');
     await renderAlunoView();
     return;
   }
@@ -981,7 +1106,7 @@ async function renderTurmasEPendentes(professorId, prefixo){
         : '<div class="empty-note" style="padding:6px 0 0 0;">Nenhum check-in feito ainda para esta aula.</div>';
       const confirmadosCount = lista.filter(c=>c.status==='confirmado').length;
       return '<div class="card"><span class="pill ' + pillClass(a.nivel) + '">' + a.nivel + '</span>' +
-        '<div style="font-weight:700; margin-top:10px;">' + nomeDiaSemana(a.data) + '-feira · ' + formatarDataBR(a.data) + ' · ' + a.hora + '</div>' +
+        '<div style="font-weight:700; margin-top:10px;">' + nomeDiaCompleto(a.data) + ' · ' + formatarDataBR(a.data) + ' · ' + a.hora + '</div>' +
         '<div style="font-size:12.5px; color:var(--ink-soft); margin-top:2px;">' + a.quadra + ' · ' + a.tipo + '</div>' +
         '<div style="font-size:12.5px; font-weight:700; color:var(--navy); margin-top:10px;">' + lista.length + ' check-in(s) · ' + confirmadosCount + ' confirmado(s)</div>' +
         nomesHtml + '</div>';
@@ -1002,7 +1127,7 @@ async function renderTurmasEPendentes(professorId, prefixo){
       return '<div class="student-row"><div style="display:flex; align-items:center; gap:12px;">' +
         '<div class="avatar">' + iniciais + '</div><div>' +
         '<div style="font-weight:700; font-size:14px;">' + nome + '</div>' +
-        '<div style="font-size:12px; color:var(--ink-soft);">' + nomeDiaSemana(c.aula.data) + '-feira ' + formatarDataBR(c.aula.data) + ' ' + c.aula.hora + ' · ' + c.aula.tipo +
+        '<div style="font-size:12px; color:var(--ink-soft);">' + nomeDiaCompleto(c.aula.data) + ' ' + formatarDataBR(c.aula.data) + ' ' + c.aula.hora + ' · ' + c.aula.tipo +
         ' <span class="pill pill-pendente" style="margin-left:6px;">Pendente</span></div></div></div>' +
         '<div style="display:flex; gap:8px;">' +
         '<button class="btn btn-primary btn-sm" onclick="confirmarPresenca(' + c.id + ',' + c.aluno_id + ')">Confirmar presença</button>' +
@@ -1051,6 +1176,7 @@ async function marcarFalta(checkinId, alunoId){
   await sb.from('checkins').update({status:'falta'}).eq('id', checkinId);
   const { data: aluno } = await sb.from('alunos').select('pontos, nome').eq('id', alunoId).single();
   await sb.from('alunos').update({ pontos: Math.max(aluno.pontos - PONTOS_POR_FALTA, 0) }).eq('id', alunoId);
+  await sincronizarNivelPelosPontos(alunoId);
   showToast('Falta registrada para ' + aluno.nome + ' — -' + PONTOS_POR_FALTA + ' ponto');
   await refrescarContextoProfessor();
 }
@@ -1229,12 +1355,30 @@ function renderAdminPromocaoTable(alunos){
   }).join('') : '<tr><td colspan="6" class="empty-note">Nenhum aluno pendente de promoção.</td></tr>';
 }
 function renderAdminFinanceiroTable(financeiro){
-  document.getElementById('admin-financeiro-table').innerHTML = financeiro.map(f=>
-    '<tr><td>' + (f.alunos?f.alunos.nome:'—') + '</td><td>' + (f.plano||'—') + '</td><td>R$ ' + f.valor + '</td><td>' + (f.vencimento||'—') + '</td>' +
+  document.getElementById('admin-financeiro-table').innerHTML = financeiro.map(f=>{
+    const vencida = mensalidadeVencida(f);
+    const textoVencimento = f.dia_vencimento
+      ? 'Todo dia ' + f.dia_vencimento + (vencida ? ' <strong style="color:var(--danger);">(vencida há ' + diasVencido(f.dia_vencimento) + ' dia(s))</strong>' : '')
+      : '—';
+    const botaoStatus = f.status==='pendente'
+      ? '<button class="btn btn-sm btn-ghost" onclick="marcarPago(' + f.id + ')">Marcar como pago</button>'
+      : '<button class="btn btn-sm btn-outline" onclick="reverterParaPendente(' + f.id + ')">Marcar como pendente</button>';
+    return '<tr' + (vencida ? ' style="background:#FBEFEC;"' : '') + '>' +
+    '<td>' + (f.alunos?f.alunos.nome:'—') + '</td><td>' + (f.plano||'—') + '</td><td>R$ ' + f.valor + '</td>' +
+    '<td>' + textoVencimento + '</td>' +
     '<td><span class="fin-status ' + f.status + '">' + (f.status==='pago'?'Pago':'Pendente') + '</span></td>' +
-    '<td>' + (f.status==='pendente' ? '<button class="btn btn-sm btn-ghost" onclick="marcarPago(' + f.id + ')">Marcar como pago</button>' : '') + '</td></tr>'
-  ).join('');
+    '<td>' + botaoStatus + '</td></tr>';
+  }).join('');
   document.getElementById('fin-inadimplentes').textContent = financeiro.filter(f=>f.status==='pendente').length;
+  const vencidas = financeiro.filter(f=>mensalidadeVencida(f)).length;
+  const elVencidas = document.getElementById('admin-mensalidades-vencidas');
+  if(elVencidas) elVencidas.textContent = vencidas;
+}
+async function reverterParaPendente(financeiroId){
+  if(!confirm('Marcar essa mensalidade como pendente novamente? Isso não remove o lançamento de entrada que já foi feito no caixa (se houver).')) return;
+  await sb.from('financeiro').update({status:'pendente'}).eq('id', financeiroId);
+  showToast('Mensalidade marcada como pendente.');
+  await renderAdminView();
 }
 function renderRelatorioSelect(alunos){
   const sel = document.getElementById('rel-aluno-select');
@@ -1314,7 +1458,7 @@ async function marcarPago(financeiroId){
   await sb.from('financeiro').update({status:'pago'}).eq('id', financeiroId);
   const fin = window._adminCache.financeiro.find(f=>f.id===financeiroId);
   const nomeAluno = fin && fin.alunos ? fin.alunos.nome : 'aluno';
-  await sb.from('caixa').insert({
+  const { error } = await sb.from('caixa').insert({
     tipo: 'entrada',
     valor: fin ? fin.valor : 0,
     descricao: 'Mensalidade — ' + nomeAluno,
@@ -1322,7 +1466,12 @@ async function marcarPago(financeiroId){
     financeiro_id: financeiroId,
     data: new Date().toISOString().slice(0,10)
   });
-  showToast('Mensalidade marcada como paga — entrada lançada no caixa.');
+  if(error){
+    showToast('Mensalidade paga, mas houve erro ao lançar no caixa: ' + error.message);
+    console.error('Erro ao lançar entrada automática no caixa:', error);
+  } else {
+    showToast('Mensalidade marcada como paga — entrada lançada no caixa.');
+  }
   await renderAdminView();
 }
 
@@ -1330,7 +1479,13 @@ async function marcarPago(financeiroId){
 async function renderCaixa(){
   const elTable = document.getElementById('caixa-table');
   if(!elTable) return;
-  const { data: lancamentos } = await sb.from('caixa').select('*').order('data', {ascending:false}).order('id', {ascending:false});
+  const inicio = document.getElementById('caixa-filtro-inicio').value;
+  const fim = document.getElementById('caixa-filtro-fim').value;
+
+  let query = sb.from('caixa').select('*').order('data', {ascending:false}).order('id', {ascending:false});
+  if(inicio) query = query.gte('data', inicio);
+  if(fim) query = query.lte('data', fim);
+  const { data: lancamentos } = await query;
   const lista = lancamentos || [];
 
   const entradas = lista.filter(l=>l.tipo==='entrada').reduce((s,l)=>s+Number(l.valor),0);
@@ -1344,8 +1499,21 @@ async function renderCaixa(){
     '<td><span class="pill" style="background:' + (l.tipo==='entrada'?'#DFEFE6':'#F3E1DE') + '; color:' + (l.tipo==='entrada'?'var(--success)':'var(--danger)') + ';">' + (l.tipo==='entrada'?'Entrada':'Saída') + '</span></td>' +
     '<td>' + (l.descricao||'—') + '</td>' +
     '<td>' + (l.origem==='mensalidade'?'Mensalidade (automático)':'Manual') + '</td>' +
-    '<td style="font-weight:700; color:' + (l.tipo==='entrada'?'var(--success)':'var(--danger)') + ';">' + (l.tipo==='entrada'?'+':'-') + ' R$ ' + Number(l.valor).toFixed(2) + '</td></tr>'
-  ).join('') : '<tr><td colspan="5" class="empty-note">Nenhum lançamento ainda.</td></tr>';
+    '<td style="font-weight:700; color:' + (l.tipo==='entrada'?'var(--success)':'var(--danger)') + ';">' + (l.tipo==='entrada'?'+':'-') + ' R$ ' + Number(l.valor).toFixed(2) + '</td>' +
+    '<td><button class="btn btn-sm btn-danger" onclick="excluirLancamentoCaixa(' + l.id + ')">Excluir</button></td></tr>'
+  ).join('') : '<tr><td colspan="6" class="empty-note">Nenhum lançamento no período selecionado.</td></tr>';
+}
+async function excluirLancamentoCaixa(caixaId){
+  if(!confirm('Excluir este lançamento do caixa? Essa ação não pode ser desfeita.')) return;
+  const { error } = await sb.from('caixa').delete().eq('id', caixaId);
+  if(error){ showToast('Erro ao excluir: ' + error.message); console.error(error); return; }
+  showToast('Lançamento excluído do caixa.');
+  await renderCaixa();
+}
+function limparFiltroCaixa(){
+  document.getElementById('caixa-filtro-inicio').value = '';
+  document.getElementById('caixa-filtro-fim').value = '';
+  renderCaixa();
 }
 function abrirLancamentoCaixa(){
   document.getElementById('cx-tipo').value = 'entrada';
@@ -1390,6 +1558,7 @@ async function aplicarAjustePontos(){
   if(!aluno){ showToast('Aluno não encontrado.'); return; }
   const novoValor = Math.max(aluno.pontos + delta, 0);
   await sb.from('alunos').update({pontos: novoValor}).eq('id', ajustePontosAlunoId);
+  await sincronizarNivelPelosPontos(ajustePontosAlunoId);
   closeModal('modal-pontos');
   showToast('Pontuação de ' + aluno.nome + ' ajustada manualmente (' + (delta>0?'+':'') + delta + ').');
   await renderAdminView();
@@ -1418,6 +1587,7 @@ function abrirCadastroAluno(){
   ['a-nome','a-whats','a-nasc','a-obs','a-valor','a-login','a-senha'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('a-nivel').value = 'Aprendiz';
   document.getElementById('a-plano').value = 'Mensal';
+  document.getElementById('a-dia-vencimento').value = '5';
   document.getElementById('a-pontos').value = '0';
   openModal('modal-aluno');
 }
@@ -1433,6 +1603,7 @@ function editarAluno(alunoId){
   document.getElementById('a-senha').value = aluno.senha || '';
   document.getElementById('a-valor').value = fin ? fin.valor : '';
   document.getElementById('a-plano').value = fin ? fin.plano : 'Mensal';
+  document.getElementById('a-dia-vencimento').value = fin && fin.dia_vencimento ? fin.dia_vencimento : '5';
   document.getElementById('a-whats').value = aluno.whatsapp || '';
   document.getElementById('a-nasc').value = aluno.data_nascimento || '';
   document.getElementById('a-obs').value = aluno.observacoes || '';
@@ -1445,6 +1616,7 @@ async function salvarAluno(){
   const pontos = parseInt(document.getElementById('a-pontos').value) || 0;
   const valor = document.getElementById('a-valor').value.trim();
   const plano = document.getElementById('a-plano').value;
+  const diaVencimento = parseInt(document.getElementById('a-dia-vencimento').value) || null;
   const login = document.getElementById('a-login').value.trim().toLowerCase();
   const senha = document.getElementById('a-senha').value.trim();
   const whats = document.getElementById('a-whats').value.trim();
@@ -1459,7 +1631,7 @@ async function salvarAluno(){
       whatsapp: whats, data_nascimento: nasc, observacoes: obs
     }).eq('id', editandoAlunoId);
     const fin = window._adminCache.financeiro.find(f=>f.aluno_id===editandoAlunoId);
-    if(fin){ await sb.from('financeiro').update({ valor: valor||0, plano }).eq('id', fin.id); }
+    if(fin){ await sb.from('financeiro').update({ valor: valor||0, plano, dia_vencimento: diaVencimento }).eq('id', fin.id); }
     closeModal('modal-aluno');
     showToast('Cadastro de ' + nome + ' atualizado.');
   } else {
@@ -1472,7 +1644,7 @@ async function salvarAluno(){
       console.error('Erro ao cadastrar aluno:', error);
       return;
     }
-    await sb.from('financeiro').insert({ aluno_id: novoAluno.id, valor: valor||0, plano, status:'pendente' });
+    await sb.from('financeiro').insert({ aluno_id: novoAluno.id, valor: valor||0, plano, dia_vencimento: diaVencimento, status:'pendente' });
     closeModal('modal-aluno');
     showToast(nome + ' cadastrado com sucesso! Login: ' + login);
   }
@@ -1575,7 +1747,7 @@ function editarAula(aulaId){
 }
 async function excluirAula(aulaId){
   const aula = window._adminCache.aulas.find(a=>a.id===aulaId);
-  if(!confirm('Excluir a aula de ' + formatarDataBR(aula.data) + ' (' + nomeDiaSemana(aula.data) + '-feira) ' + aula.hora + '? Isso também remove os check-ins vinculados a ela.')) return;
+  if(!confirm('Excluir a aula de ' + formatarDataBR(aula.data) + ' (' + nomeDiaCompleto(aula.data) + ') ' + aula.hora + '? Isso também remove os check-ins vinculados a ela.')) return;
   await sb.from('aulas').delete().eq('id', aulaId);
   showToast('Aula excluída.');
   await renderAdminView();
@@ -1634,6 +1806,7 @@ async function gerarRelatorio(){
     '<div class="net-divider" style="margin:20px 0 10px 0;"><span class="label">FINANCEIRO</span><div class="rope"></div></div>' +
     '<div class="report-row"><span>Plano</span><strong>' + (fin?fin.plano:'—') + '</strong></div>' +
     '<div class="report-row"><span>Valor</span><strong>' + (fin?('R$ '+fin.valor):'—') + '</strong></div>' +
+    '<div class="report-row"><span>Vencimento</span><strong>' + (fin&&fin.dia_vencimento ? ('Todo dia ' + fin.dia_vencimento) : '—') + '</strong></div>' +
     '<div class="report-row"><span>Status do pagamento</span><strong style="color:' + (fin&&fin.status==='pago'?'var(--success)':'var(--danger)') + ';">' + (fin?(fin.status==='pago'?'Pago':'Pendente'):'—') + '</strong></div>' +
     '</div>';
 }
