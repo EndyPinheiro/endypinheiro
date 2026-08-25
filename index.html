@@ -137,6 +137,14 @@
   .rating-summary{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;}
   .rating-summary .stars-static{color:var(--gold); font-size:16px; letter-spacing:2px;}
   .anon-note{font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+  .prof-chips{display:flex; flex-wrap:wrap; gap:8px;}
+  .prof-chip{
+    padding:8px 14px; border-radius:20px; border:1.5px solid var(--line); cursor:pointer;
+    font-family:'Inter'; font-size:13px; font-weight:600; color:var(--ink); background:#fff;
+    user-select:none; transition:all .15s ease;
+  }
+  .prof-chip:hover{border-color:var(--navy-light);}
+  .prof-chip.selected{background:var(--navy); color:#fff; border-color:var(--navy);}
   .report-box{border:1px dashed var(--line); border-radius:14px; padding:20px; margin-top:16px;}
   .report-row{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:13.5px;}
   .report-row:last-child{border-bottom:none;}
@@ -557,8 +565,9 @@
       <input type="text" id="f-tipo" placeholder="ex: Chapa, peito, recepção, situação de jogo...">
     </div>
     <div class="field">
-      <label>Professor</label>
-      <select id="f-professor"></select>
+      <label>Professor(es)</label>
+      <div id="f-professores-lista" class="prof-chips"></div>
+      <div class="anon-note">Marque um ou mais — útil quando duas pessoas dão aula juntas na mesma turma.</div>
     </div>
     <div class="field"><label>Capacidade de vagas</label><input type="text" id="f-vagas" placeholder="ex: 12"></div>
     <div class="modal-actions">
@@ -733,7 +742,30 @@ function mensalidadeVencida(f){
   if(f.status !== 'pendente' || !f.dia_vencimento) return false;
   return diasVencido(f.dia_vencimento) > 0;
 }
+/* Um "pago" é de um ciclo anterior quando já passamos do dia de vencimento deste mês
+   e o pagamento registrado foi feito antes desse vencimento (ou seja, pagou o mês passado
+   e o novo mês já começou). Nesse caso a mensalidade deve voltar a ficar pendente sozinha. */
+function precisaResetarCicloMensal(f){
+  if(f.status !== 'pago' || !f.dia_vencimento || !f.pago_em) return false;
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const diaLimiteEsteMes = diaVencimentoNesteMes(f.dia_vencimento);
+  const dataLimiteEsteMes = new Date(hoje.getFullYear(), hoje.getMonth(), diaLimiteEsteMes);
+  const dataPago = new Date(f.pago_em + 'T00:00:00');
+  return hoje >= dataLimiteEsteMes && dataPago < dataLimiteEsteMes;
+}
+async function resetarMensalidadesDoNovoCiclo(financeiro){
+  const paraResetar = financeiro.filter(precisaResetarCicloMensal);
+  if(!paraResetar.length) return false;
+  for(const f of paraResetar){
+    await sb.from('financeiro').update({ status: 'pendente' }).eq('id', f.id);
+  }
+  return true;
+}
 function pillClass(nivel){ return "pill-" + nivel.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function nomesProfessoresDaAula(a){
+  const profs = (a.aula_professores||[]).map(ap=>ap.professores).filter(Boolean);
+  return profs.length ? profs.map(p=>p.nome).join(', ') : '—';
+}
 
 /* Calcula o nível "correto" pela pontuação, mas nunca ultrapassa o nível atual do aluno —
    isto é: só serve para REBAIXAR automaticamente quando os pontos caem abaixo do mínimo do
@@ -890,7 +922,7 @@ async function renderAlunoView(){
   }
 
   const hoje = new Date().toISOString().slice(0,10);
-  const { data: aulas } = await sb.from('aulas').select('*, professores(id,nome)').in('nivel', niveisPermitidos).gte('data', hoje).order('data').order('hora');
+  const { data: aulas } = await sb.from('aulas').select('*, aula_professores(professores(id,nome))').in('nivel', niveisPermitidos).gte('data', hoje).order('data').order('hora');
   const { data: meusCheckins } = await sb.from('checkins').select('*').eq('aluno_id', aluno.id);
 
   // conta quantas vagas já estão ocupadas em cada aula (check-ins pendentes ou confirmados contam como vaga ocupada)
@@ -906,7 +938,8 @@ async function renderAlunoView(){
     el.innerHTML = '<p class="empty-note">Ainda não há aulas cadastradas para o nível ' + aluno.nivel + '.</p>';
   } else {
     el.innerHTML = '<div class="classes-grid">' + aulas.map(a=>{
-      const profNome = a.professores ? a.professores.nome : '—';
+      const profs = (a.aula_professores||[]).map(ap=>ap.professores).filter(Boolean);
+      const profNomes = profs.length ? profs.map(p=>p.nome).join(', ') : '—';
       const checkin = (meusCheckins||[]).find(c=>c.aula_id===a.id);
       const ocupadas = ocupacaoPorAula[a.id] || 0;
       const vagasRestantes = a.capacidade - ocupadas;
@@ -930,13 +963,22 @@ async function renderAlunoView(){
             : '<div class="anon-note" style="margin-top:8px; text-align:center;">Cancelamento indisponível — faltam menos de 1h para a aula</div>');
       }
       let avaliacaoHtml = '';
-      if(checkin && checkin.status==='confirmado' && a.professores){
+      if(checkin && checkin.status==='confirmado' && profs.length){
         avaliacaoHtml = '<div style="border-top:1px dashed var(--line); padding-top:10px; margin-top:2px;">' +
-          '<div style="font-size:12.5px; font-weight:700; margin-bottom:2px;">Avalie o professor nesta aula</div>' +
-          '<div class="star-widget" id="stars-' + a.id + '" data-prof="' + a.professores.id + '">' +
-          [1,2,3,4,5].map(n=>'<span class="star" onclick="selecionarEstrela(' + a.id + ',' + n + ')">★</span>').join('') +
-          '</div>' +
-          '<button class="btn btn-outline btn-sm" id="btn-aval-' + a.id + '" onclick="enviarAvaliacao(' + a.id + ',' + a.professores.id + ')">Enviar avaliação</button>' +
+          '<div style="font-size:12.5px; font-weight:700; margin-bottom:6px;">Avalie ' + (profs.length>1?'os professores':'o professor') + ' nesta aula</div>' +
+          profs.map(p=>{
+            const nota = estrelaSelecionada[a.id+'-'+p.id] || 0;
+            const jaEnviada = estrelaSelecionada[a.id+'-'+p.id+'-enviado'];
+            const stars = [1,2,3,4,5].map(n=>'<span class="star" onclick="selecionarEstrela(' + a.id + ',' + p.id + ',' + n + ')">★</span>').join('');
+            return '<div style="margin-bottom:8px;">' +
+              (profs.length>1 ? '<div style="font-size:12px; font-weight:700; margin-bottom:2px;">' + p.nome + '</div>' : '') +
+              '<div class="star-widget" id="stars-' + a.id + '-' + p.id + '" style="margin:2px 0 6px 0;">' + stars + '</div>' +
+              (jaEnviada
+                ? '<span style="font-size:12px; color:var(--success); font-weight:700;">✓ Avaliação enviada — obrigado!</span>'
+                : '<input type="text" id="comentario-' + a.id + '-' + p.id + '" placeholder="Comentário (opcional)" style="width:100%; padding:8px 10px; border-radius:8px; border:1.5px solid var(--line); font-family:Inter; font-size:12.5px; margin-bottom:6px;">' +
+                  '<button class="btn btn-outline btn-sm" onclick="enviarAvaliacao(' + a.id + ',' + p.id + ')">Enviar avaliação' + (profs.length>1?(' para '+p.nome.split(' ')[0]):'') + '</button>') +
+              '</div>';
+          }).join('') +
           '<div class="anon-note">Avaliação anônima — não fica associada ao seu nome.</div></div>';
       }
       return '<div class="class-card">' +
@@ -944,8 +986,8 @@ async function renderAlunoView(){
         '<div class="class-info"><div class="t">' + nomeDiaCompleto(a.data) + ' · ' + formatarDataBR(a.data) + '</div><div class="s">' + a.hora + ' · ' + a.quadra + '</div></div></div>' +
         '<div style="display:flex; flex-direction:column; gap:6px; align-items:flex-start;"><span class="pill ' + pillClass(a.nivel) + '">' + a.nivel + '</span><span class="class-tipo">' + a.tipo + '</span></div>' +
         '<div style="font-weight:700; font-size:12.5px; color:' + (lotada?'var(--danger)':'var(--ink-soft)') + ';">' + (lotada ? 'Turma lotada' : (vagasRestantes + ' vaga(s) disponível(is) de ' + a.capacidade)) + '</div>' +
-        '<div class="class-prof"><div class="mini-avatar">' + profNome.split(' ').map(p=>p[0]).join('').slice(0,2) + '</div>' +
-        '<span>Professor: <strong style="color:var(--ink);">' + profNome + '</strong></span></div>' +
+        '<div class="class-prof"><div class="mini-avatar">' + (profs[0]?profs[0].nome.split(' ').map(p=>p[0]).join('').slice(0,2):'?') + '</div>' +
+        '<span>Professor' + (profs.length>1?'es':'') + ': <strong style="color:var(--ink);">' + profNomes + '</strong></span></div>' +
         statusHtml + avaliacaoHtml + '</div>';
     }).join('') + '</div>';
   }
@@ -1037,17 +1079,21 @@ async function cancelarCheckin(checkinId, aulaId){
   await renderAlunoView();
 }
 let estrelaSelecionada = {};
-function selecionarEstrela(aulaId, n){
-  estrelaSelecionada[aulaId] = n;
-  document.querySelectorAll('#stars-' + aulaId + ' .star').forEach((s,i)=> s.classList.toggle('filled', i < n));
+function selecionarEstrela(aulaId, professorId, n){
+  const chave = aulaId + '-' + professorId;
+  estrelaSelecionada[chave] = n;
+  document.querySelectorAll('#stars-' + aulaId + '-' + professorId + ' .star').forEach((s,i)=> s.classList.toggle('filled', i < n));
 }
 async function enviarAvaliacao(aulaId, professorId){
-  const nota = estrelaSelecionada[aulaId];
+  const chave = aulaId + '-' + professorId;
+  const nota = estrelaSelecionada[chave];
   if(!nota){ showToast('Selecione de 1 a 5 estrelas antes de enviar'); return; }
-  const { error } = await sb.from('avaliacoes_professor').insert({ professor_id: professorId, estrelas: nota });
+  const campoComentario = document.getElementById('comentario-' + aulaId + '-' + professorId);
+  const comentario = campoComentario ? campoComentario.value.trim() : '';
+  const { error } = await sb.from('avaliacoes_professor').insert({ professor_id: professorId, estrelas: nota, comentario: comentario || null });
   if(error){ showToast('Erro ao enviar avaliação.'); console.error(error); return; }
-  const btn = document.getElementById('btn-aval-' + aulaId);
-  if(btn) btn.outerHTML = '<span style="font-size:12px; color:var(--success); font-weight:700;">✓ Avaliação enviada — obrigado!</span>';
+  estrelaSelecionada[chave+'-enviado'] = true;
+  await renderAlunoView();
   showToast('Avaliação enviada anonimamente. Obrigado!');
 }
 
@@ -1058,8 +1104,8 @@ async function renderProfessorView(){
   document.getElementById('prof-nome-header').textContent = 'OLÁ, ' + currentUser.nome.toUpperCase();
   await renderTurmasEPendentes(currentUser.id, 'prof');
 
-  const { data: minhasAulas } = await sb.from('aulas').select('nivel').eq('professor_id', currentUser.id);
-  const niveisDoProfessor = [...new Set((minhasAulas||[]).map(a=>a.nivel))];
+  const { data: vinculosProf } = await sb.from('aula_professores').select('aulas(nivel)').eq('professor_id', currentUser.id);
+  const niveisDoProfessor = [...new Set((vinculosProf||[]).map(v=>v.aulas ? v.aulas.nivel : null).filter(Boolean))];
   let meusAlunos = [];
   if(niveisDoProfessor.length){
     const { data } = await sb.from('alunos').select('*').in('nivel', niveisDoProfessor);
@@ -1079,8 +1125,12 @@ async function renderProfessorView(){
    dentro do Admin (para quando o administrador também dá aula). */
 async function renderTurmasEPendentes(professorId, prefixo){
   const hoje = new Date().toISOString().slice(0,10);
-  const { data: aulas } = await sb.from('aulas').select('*').eq('professor_id', professorId).gte('data', hoje).order('data').order('hora');
-  const aulaIds = (aulas||[]).map(a=>a.id);
+  const { data: vinculos } = await sb.from('aula_professores').select('aulas(*, aula_professores(professores(id,nome)))').eq('professor_id', professorId);
+  const aulas = (vinculos||[])
+    .map(v=>v.aulas)
+    .filter(a=>a && a.data >= hoje)
+    .sort((a,b)=> (a.data+a.hora).localeCompare(b.data+b.hora));
+  const aulaIds = aulas.map(a=>a.id);
 
   let checkinsPorAula = {};
   if(aulaIds.length){
@@ -1106,13 +1156,20 @@ async function renderTurmasEPendentes(professorId, prefixo){
           lista.map(c=>{
             const s = statusInfo[c.status];
             const nome = c.alunos ? c.alunos.nome : '—';
-            return '<span class="pill" style="background:' + s.bg + '; color:' + s.color + ';">' + nome + ' · ' + s.label + '</span>';
+            const podeDesfazer = c.status==='confirmado' || c.status==='falta';
+            return '<span class="pill" style="background:' + s.bg + '; color:' + s.color + '; display:inline-flex; align-items:center; gap:6px;">' +
+              nome + ' · ' + s.label +
+              (podeDesfazer ? '<button onclick="desfazerCheckin(' + c.id + ',' + c.aluno_id + ',\'' + c.status + '\')" title="Desfazer" style="border:none; background:transparent; color:inherit; font-weight:900; cursor:pointer; padding:0 2px; font-size:13px; line-height:1;">↺</button>' : '') +
+              '</span>';
           }).join('') + '</div>'
         : '<div class="empty-note" style="padding:6px 0 0 0;">Nenhum check-in feito ainda para esta aula.</div>';
       const confirmadosCount = lista.filter(c=>c.status==='confirmado').length;
+      const outrosProfs = (a.aula_professores||[]).map(ap=>ap.professores).filter(p=>p && p.id!==professorId);
+      const coProfHtml = outrosProfs.length ? '<div style="font-size:11.5px; color:var(--ink-soft); margin-top:2px;">Junto com: ' + outrosProfs.map(p=>p.nome).join(', ') + '</div>' : '';
       return '<div class="card"><span class="pill ' + pillClass(a.nivel) + '">' + a.nivel + '</span>' +
         '<div style="font-weight:700; margin-top:10px;">' + nomeDiaCompleto(a.data) + ' · ' + formatarDataBR(a.data) + ' · ' + a.hora + '</div>' +
         '<div style="font-size:12.5px; color:var(--ink-soft); margin-top:2px;">' + a.quadra + ' · ' + a.tipo + '</div>' +
+        coProfHtml +
         '<div style="font-size:12.5px; font-weight:700; color:var(--navy); margin-top:10px;">' + lista.length + ' check-in(s) · ' + confirmadosCount + ' confirmado(s)</div>' +
         nomesHtml + '</div>';
     }).join('') : '<p class="empty-note">Nenhuma turma atribuída ainda.</p>';
@@ -1185,6 +1242,26 @@ async function marcarFalta(checkinId, alunoId){
   showToast('Falta registrada para ' + aluno.nome + ' — -' + PONTOS_POR_FALTA + ' ponto');
   await refrescarContextoProfessor();
 }
+async function desfazerCheckin(checkinId, alunoId, statusAtual){
+  if(!confirm('Desfazer essa ação? O check-in volta para "aguardando" e o ponto correspondente é revertido.')) return;
+  const { data: checkin } = await sb.from('checkins').select('status').eq('id', checkinId).single();
+  if(!checkin || checkin.status !== statusAtual){
+    showToast('Este check-in já mudou de status enquanto isso — recarregando.');
+    await refrescarContextoProfessor();
+    return;
+  }
+  const { data: aluno } = await sb.from('alunos').select('pontos, nome').eq('id', alunoId).single();
+  if(!aluno){ showToast('Aluno não encontrado.'); return; }
+  let novoPontos = aluno.pontos;
+  if(statusAtual === 'confirmado') novoPontos = Math.max(aluno.pontos - PONTOS_POR_PRESENCA, 0);
+  else if(statusAtual === 'falta') novoPontos = aluno.pontos + PONTOS_POR_FALTA;
+
+  await sb.from('checkins').update({status:'pendente'}).eq('id', checkinId);
+  await sb.from('alunos').update({ pontos: novoPontos }).eq('id', alunoId);
+  await sincronizarNivelPelosPontos(alunoId);
+  showToast('Ação desfeita para ' + aluno.nome + ' — check-in voltou a aguardar confirmação.');
+  await refrescarContextoProfessor();
+}
 async function refrescarContextoProfessor(){
   // Recarrega TUDO relacionado à pontuação — evita qualquer tela desatualizada em outras
   // abas depois de confirmar presença ou marcar falta.
@@ -1197,7 +1274,7 @@ async function refrescarContextoProfessor(){
    ====================================================================== */
 async function renderAdminView(){
   const [{data: aulas}, {data: alunos}, {data: professores}, {data: financeiro}, {data: avaliacoes}, {data: checkins}] = await Promise.all([
-    sb.from('aulas').select('*, professores(id,nome)').order('data').order('hora'),
+    sb.from('aulas').select('*, aula_professores(professores(id,nome))').order('data').order('hora'),
     sb.from('alunos').select('*').order('nome'),
     sb.from('professores').select('*').order('nome'),
     sb.from('financeiro').select('*, alunos(nome)'),
@@ -1206,6 +1283,14 @@ async function renderAdminView(){
   ]);
 
   window._adminCache = { aulas: aulas||[], alunos: alunos||[], professores: professores||[], financeiro: financeiro||[], avaliacoes: avaliacoes||[], checkins: checkins||[] };
+
+  // vira o ciclo: mensalidades pagas do mês passado voltam a ficar pendentes sozinhas
+  const houveReset = await resetarMensalidadesDoNovoCiclo(window._adminCache.financeiro);
+  if(houveReset){
+    const { data: financeiroAtualizado } = await sb.from('financeiro').select('*, alunos(nome)');
+    window._adminCache.financeiro = financeiroAtualizado || [];
+  }
+
   renderCalendarioSemanal(window._adminCache.aulas, 'admin-calendario');
   renderCalendarioSemanal(window._adminCache.aulas, 'admin-calendario-dashboard');
   renderAdminAulasTable(window._adminCache.aulas);
@@ -1289,7 +1374,7 @@ function renderCalendarioSemanal(aulas, elId){
       '<div class="cal-class ' + pillClass(a.nivel).replace('pill-','nivel-') + '">' +
       '<div class="hora">' + a.hora + ' · ' + a.quadra + '</div>' +
       '<div class="det">' + a.nivel + ' · ' + a.tipo + '</div>' +
-      '<div class="det">' + (a.professores?a.professores.nome:'—') + '</div></div>'
+      '<div class="det">' + nomesProfessoresDaAula(a) + '</div></div>'
     ).join('') : '<div class="cal-empty">Sem aulas</div>';
     return '<div class="cal-day' + (iso===colunas[0]?' cal-day-hoje':'') + '"><div class="cal-day-header">' + diaCurtoDeData(iso) + '<br><span style="font-weight:400; font-size:11px;">' + formatarDataBR(iso) + '</span></div>' + blocos + '</div>';
   }).join('');
@@ -1300,7 +1385,7 @@ function renderAdminAulasTable(aulas){
     '<tr><td>' + formatarDataBR(a.data) + ' <span style="color:var(--ink-soft); font-size:11.5px;">(' + nomeDiaSemana(a.data) + ')</span></td>' +
     '<td>' + a.hora + '</td><td>' + a.quadra + '</td>' +
     '<td><span class="pill ' + pillClass(a.nivel) + '">' + a.nivel + '</span></td>' +
-    '<td>' + a.tipo + '</td><td>' + (a.professores?a.professores.nome:'—') + '</td><td>' + a.capacidade + '</td>' +
+    '<td>' + a.tipo + '</td><td>' + nomesProfessoresDaAula(a) + '</td><td>' + a.capacidade + '</td>' +
     '<td class="td-actions"><button class="btn btn-sm btn-ghost" onclick="editarAula(' + a.id + ')">Editar</button>' +
     '<button class="btn btn-sm btn-danger" onclick="excluirAula(' + a.id + ')">Excluir</button></td></tr>'
   ).join('');
@@ -1312,7 +1397,7 @@ function renderAdminProfessoresLista(professores, aulas){
     '<div style="font-weight:700; font-size:14px;">' + p.nome + '</div>' +
     '<div style="font-size:12px; color:var(--ink-soft);">Login: ' + p.login + '</div></div></div>' +
     '<div class="td-actions" style="align-items:center;">' +
-    '<span class="pill" style="background:#EFEAD9;">' + aulas.filter(a=>a.professor_id===p.id).length + ' turmas</span>' +
+    '<span class="pill" style="background:#EFEAD9;">' + aulas.filter(a=>(a.aula_professores||[]).some(ap=>ap.professores && ap.professores.id===p.id)).length + ' turmas</span>' +
     '<button class="btn btn-sm btn-ghost" onclick="editarProfessor(' + p.id + ')">Editar</button>' +
     '<button class="btn btn-sm btn-danger" onclick="excluirProfessor(' + p.id + ')">Excluir</button>' +
     '</div></div>'
@@ -1326,13 +1411,24 @@ function renderAdminDistribuicao(alunos){
 }
 function renderAdminAvaliacoes(professores, avaliacoes){
   document.getElementById('admin-avaliacao-professores').innerHTML = professores.map(p=>{
-    const notas = avaliacoes.filter(a=>a.professor_id===p.id).map(a=>a.estrelas);
+    const avals = avaliacoes.filter(a=>a.professor_id===p.id);
+    const notas = avals.map(a=>a.estrelas);
     const media = notas.length ? (notas.reduce((s,n)=>s+n,0)/notas.length) : 0;
     const cheias = Math.round(media);
     const starsHtml = [1,2,3,4,5].map(n=>'<span style="opacity:' + (n<=cheias?1:0.25) + ';">★</span>').join('');
-    return '<div class="rating-summary" style="padding:10px 0; border-bottom:1px solid var(--line);">' +
+    const comentarios = avals.filter(a=>a.comentario && a.comentario.trim()).sort((a,b)=>(b.criado_em||'').localeCompare(a.criado_em||''));
+    const comentariosHtml = comentarios.length
+      ? '<div style="margin-top:8px; padding-left:2px;">' +
+        comentarios.map(c=>
+          '<div style="font-size:12.5px; color:var(--ink-soft); padding:6px 0; border-top:1px dashed var(--line);">' +
+          '<span class="stars-static" style="font-size:12px;">' + '★'.repeat(c.estrelas) + '</span> "' + c.comentario + '"</div>'
+        ).join('') + '</div>'
+      : '';
+    return '<div class="rating-summary" style="padding:10px 0; border-bottom:1px solid var(--line); flex-direction:column; align-items:stretch;">' +
+      '<div style="display:flex; justify-content:space-between; align-items:center;">' +
       '<div><div style="font-weight:700; font-size:14px;">' + p.nome + '</div><div style="font-size:12px; color:var(--ink-soft);">' + notas.length + ' avaliações recebidas</div></div>' +
-      '<div style="text-align:right;"><div class="stars-static">' + starsHtml + '</div><div style="font-size:12.5px; color:var(--ink-soft);">' + (notas.length?media.toFixed(1):'—') + ' / 5.0</div></div></div>';
+      '<div style="text-align:right;"><div class="stars-static">' + starsHtml + '</div><div style="font-size:12.5px; color:var(--ink-soft);">' + (notas.length?media.toFixed(1):'—') + ' / 5.0</div></div></div>' +
+      comentariosHtml + '</div>';
   }).join('');
 }
 function renderAdminAlunosTable(alunos){
@@ -1420,11 +1516,12 @@ async function gerarRelatorioProfessor(){
 
   const { data: prof } = await sb.from('professores').select('*').eq('id', profId).single();
 
-  let query = sb.from('aulas').select('*').eq('professor_id', profId);
-  if(inicio) query = query.gte('data', inicio);
-  if(fim) query = query.lte('data', fim);
-  const { data: aulas } = await query;
-  const aulaIds = (aulas||[]).map(a=>a.id);
+  let query = sb.from('aula_professores').select('aulas!inner(id,data)').eq('professor_id', profId);
+  if(inicio) query = query.gte('aulas.data', inicio);
+  if(fim) query = query.lte('aulas.data', fim);
+  const { data: vinculos } = await query;
+  const aulas = (vinculos||[]).map(v=>v.aulas).filter(Boolean);
+  const aulaIds = aulas.map(a=>a.id);
 
   let confirmados = 0, faltas = 0;
   if(aulaIds.length){
@@ -1453,14 +1550,23 @@ async function gerarRelatorioProfessor(){
     '</div>';
 }
 function popularSelectProfessores(professores){
-  const sel = document.getElementById('f-professor');
-  const atual = sel.value;
-  sel.innerHTML = professores.map(p=>'<option value="' + p.id + '">' + p.nome + '</option>').join('');
-  if(atual) sel.value = atual;
+  const el = document.getElementById('f-professores-lista');
+  const marcadosAntes = new Set([...el.querySelectorAll('.prof-chip.selected')].map(c=>c.dataset.id));
+  el.innerHTML = professores.map(p =>
+    '<span class="prof-chip ' + (marcadosAntes.has(String(p.id))?'selected':'') + '" data-id="' + p.id + '" onclick="this.classList.toggle(\'selected\')">' + p.nome + '</span>'
+  ).join('');
+}
+function marcarProfessoresNoFormulario(idsSelecionados){
+  document.querySelectorAll('#f-professores-lista .prof-chip').forEach(chip=>{
+    chip.classList.toggle('selected', idsSelecionados.map(String).includes(chip.dataset.id));
+  });
+}
+function professoresMarcadosNoFormulario(){
+  return [...document.querySelectorAll('#f-professores-lista .prof-chip.selected')].map(c=>parseInt(c.dataset.id));
 }
 
 async function marcarPago(financeiroId){
-  await sb.from('financeiro').update({status:'pago'}).eq('id', financeiroId);
+  await sb.from('financeiro').update({status:'pago', pago_em: new Date().toISOString().slice(0,10)}).eq('id', financeiroId);
   const fin = window._adminCache.financeiro.find(f=>f.id===financeiroId);
   const nomeAluno = fin && fin.alunos ? fin.alunos.nome : 'aluno';
   const { error } = await sb.from('caixa').insert({
@@ -1695,14 +1801,22 @@ function editarProfessor(profId){
 async function excluirProfessor(profId){
   const prof = window._adminCache.professores.find(p=>p.id===profId);
   if(!prof) return;
-  const aulasVinculadas = window._adminCache.aulas.filter(a=>a.professor_id===profId);
-  const aviso = aulasVinculadas.length
-    ? 'Atenção: ' + prof.nome + ' tem ' + aulasVinculadas.length + ' aula(s) cadastrada(s). Excluir o professor vai excluir essas aulas também (e os check-ins vinculados a elas). Deseja continuar?'
-    : 'Excluir o cadastro de ' + prof.nome + '? Essa ação não pode ser desfeita.';
+  const aulasVinculadas = window._adminCache.aulas.filter(a=>(a.aula_professores||[]).some(ap=>ap.professores && ap.professores.id===profId));
+  const aulasSoDele = aulasVinculadas.filter(a=>(a.aula_professores||[]).filter(ap=>ap.professores).length === 1);
+  const aulasCompartilhadas = aulasVinculadas.length - aulasSoDele.length;
+
+  let aviso = 'Excluir o cadastro de ' + prof.nome + '?';
+  if(aulasSoDele.length){
+    aviso += ' Ele é o único professor em ' + aulasSoDele.length + ' aula(s) — essas aulas serão excluídas junto (com os check-ins vinculados).';
+  }
+  if(aulasCompartilhadas){
+    aviso += ' Em ' + aulasCompartilhadas + ' aula(s) compartilhada(s) com outro professor, só o vínculo dele será removido — a aula continua existindo.';
+  }
+  aviso += ' Essa ação não pode ser desfeita.';
   if(!confirm(aviso)) return;
 
-  if(aulasVinculadas.length){
-    const aulaIds = aulasVinculadas.map(a=>a.id);
+  if(aulasSoDele.length){
+    const aulaIds = aulasSoDele.map(a=>a.id);
     await sb.from('checkins').delete().in('aula_id', aulaIds);
     await sb.from('aulas').delete().in('id', aulaIds);
   }
@@ -1752,9 +1866,10 @@ function abrirCadastroAula(){
   document.getElementById('f-nivel').value = 'Aprendiz';
   document.getElementById('f-tipo').value = '';
   document.getElementById('f-vagas').value = '';
+  marcarProfessoresNoFormulario([]);
   openModal('modal-aula');
 }
-function editarAula(aulaId){
+async function editarAula(aulaId){
   const aula = window._adminCache.aulas.find(a=>a.id===aulaId);
   editandoAulaId = aulaId;
   document.getElementById('modal-aula-titulo').textContent = 'Editar aula';
@@ -1764,7 +1879,8 @@ function editarAula(aulaId){
   document.getElementById('f-nivel').value = aula.nivel;
   document.getElementById('f-tipo').value = aula.tipo;
   document.getElementById('f-vagas').value = aula.capacidade;
-  document.getElementById('f-professor').value = aula.professor_id;
+  const { data: vinculos } = await sb.from('aula_professores').select('professor_id').eq('aula_id', aulaId);
+  marcarProfessoresNoFormulario((vinculos||[]).map(v=>v.professor_id));
   openModal('modal-aula');
 }
 async function excluirAula(aulaId){
@@ -1785,21 +1901,30 @@ async function salvarAula(){
   if(!dataAula){ showToast('Selecione a data da aula'); return; }
   const vagas = parseInt(document.getElementById('f-vagas').value) || 12;
   const tipo = document.getElementById('f-tipo').value.trim() || 'Aula geral';
-  const professorId = parseInt(document.getElementById('f-professor').value);
+  const professoresIds = professoresMarcadosNoFormulario();
+  if(!professoresIds.length){ showToast('Selecione ao menos um professor'); return; }
   const dados = {
     data: dataAula, hora: document.getElementById('f-horario').value || '00:00',
     quadra: document.getElementById('f-quadra').value, nivel: document.getElementById('f-nivel').value,
-    tipo, professor_id: professorId, capacidade: vagas
+    tipo, capacidade: vagas
   };
+
+  let aulaId = editandoAulaId;
   if(editandoAulaId){
-    await sb.from('aulas').update(dados).eq('id', editandoAulaId);
-    closeModal('modal-aula');
-    showToast('Aula atualizada — mudanças já refletidas para alunos e professor.');
+    const { error } = await sb.from('aulas').update(dados).eq('id', editandoAulaId);
+    if(error){ showToast('Erro ao atualizar aula: ' + error.message); console.error(error); return; }
   } else {
-    await sb.from('aulas').insert(dados);
-    closeModal('modal-aula');
-    showToast('Aula cadastrada — já aparece para os alunos do nível e para o professor responsável.');
+    const { data: novaAula, error } = await sb.from('aulas').insert(dados).select().single();
+    if(error){ showToast('Erro ao cadastrar aula: ' + error.message); console.error(error); return; }
+    aulaId = novaAula.id;
   }
+
+  await sb.from('aula_professores').delete().eq('aula_id', aulaId);
+  const { error: errProf } = await sb.from('aula_professores').insert(professoresIds.map(pid => ({ aula_id: aulaId, professor_id: pid })));
+  if(errProf){ showToast('Aula salva, mas houve erro ao vincular professor(es): ' + errProf.message); console.error(errProf); await renderAdminView(); return; }
+
+  closeModal('modal-aula');
+  showToast(editandoAulaId ? 'Aula atualizada — mudanças já refletidas para alunos e professores.' : 'Aula cadastrada — já aparece para os alunos do nível e para os professores responsáveis.');
   await renderAdminView();
 }
 
