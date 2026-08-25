@@ -1027,7 +1027,12 @@ async function cancelarCheckin(checkinId, aulaId){
     showToast('Não é mais possível cancelar — faltam menos de 1h para a aula.');
     return;
   }
-  await sb.from('checkins').delete().eq('id', checkinId);
+  const { error } = await sb.from('checkins').delete().eq('id', checkinId);
+  if(error){
+    showToast('Erro ao cancelar: ' + error.message);
+    console.error('Erro ao cancelar check-in:', error);
+    return;
+  }
   showToast('Check-in cancelado — vaga liberada para outro aluno.');
   await renderAlunoView();
 }
@@ -1572,8 +1577,25 @@ async function alternarStatusAluno(alunoId, statusAtual){
 }
 async function excluirAluno(alunoId){
   const aluno = window._adminCache.alunos.find(a=>a.id===alunoId);
-  if(!confirm('Excluir o cadastro de ' + aluno.nome + '? Essa ação não pode ser desfeita.')) return;
-  await sb.from('alunos').delete().eq('id', alunoId);
+  if(!aluno) return;
+  if(!confirm('Excluir o cadastro de ' + aluno.nome + '? Isso também remove o financeiro e o histórico de check-ins dele (os lançamentos já feitos no caixa são mantidos, só perdem o vínculo com o aluno). Essa ação não pode ser desfeita.')) return;
+
+  await sb.from('checkins').delete().eq('aluno_id', alunoId);
+
+  const { data: financeirosDoAluno } = await sb.from('financeiro').select('id').eq('aluno_id', alunoId);
+  const financeiroIds = (financeirosDoAluno||[]).map(f=>f.id);
+  if(financeiroIds.length){
+    // mantém o histórico de dinheiro recebido no caixa — só desvincula do financeiro que será excluído
+    await sb.from('caixa').update({ financeiro_id: null }).in('financeiro_id', financeiroIds);
+  }
+  await sb.from('financeiro').delete().eq('aluno_id', alunoId);
+
+  const { error } = await sb.from('alunos').delete().eq('id', alunoId);
+  if(error){
+    showToast('Erro ao excluir: ' + error.message);
+    console.error('Erro ao excluir aluno:', error);
+    return;
+  }
   showToast('Cadastro de ' + aluno.nome + ' excluído.');
   await renderAdminView();
 }
@@ -1748,7 +1770,13 @@ function editarAula(aulaId){
 async function excluirAula(aulaId){
   const aula = window._adminCache.aulas.find(a=>a.id===aulaId);
   if(!confirm('Excluir a aula de ' + formatarDataBR(aula.data) + ' (' + nomeDiaCompleto(aula.data) + ') ' + aula.hora + '? Isso também remove os check-ins vinculados a ela.')) return;
-  await sb.from('aulas').delete().eq('id', aulaId);
+  await sb.from('checkins').delete().eq('aula_id', aulaId);
+  const { error } = await sb.from('aulas').delete().eq('id', aulaId);
+  if(error){
+    showToast('Erro ao excluir: ' + error.message);
+    console.error('Erro ao excluir aula:', error);
+    return;
+  }
   showToast('Aula excluída.');
   await renderAdminView();
 }
