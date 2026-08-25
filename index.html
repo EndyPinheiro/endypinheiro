@@ -703,6 +703,7 @@ const META_NIVEL = {"Aprendiz":0, "Iniciante":80, "Intermediário":160, "Avança
 const PONTOS_POR_PRESENCA = 1;
 const PONTOS_POR_FALTA = 1;
 const JANELA_CANCELAMENTO_MIN = 60;
+const JANELA_CHECKIN_APOS_INICIO_MIN = 15; // após esse tempo do início da aula, check-in fecha
 const NOMES_DIA_SEMANA = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
 const DIA_CURTO = {"Domingo":"DOM","Segunda":"SEG","Terça":"TER","Quarta":"QUA","Quinta":"QUI","Sexta":"SEX","Sábado":"SAB"};
 
@@ -798,6 +799,10 @@ function iniciaisDe(nome){ return nome.trim().split(/\s+/).slice(0,2).map(p=>p[0
 function minutosParaAula(aula){
   const dt = new Date(aula.data + 'T' + horaNormalizada(aula.hora) + ':00');
   return (dt - new Date()) / 60000;
+}
+function checkinAindaAberto(aula){
+  // permitido enquanto a aula não começou, ou até 15min depois do início
+  return minutosParaAula(aula) >= -JANELA_CHECKIN_APOS_INICIO_MIN;
 }
 
 let currentUser = null; // { role: 'admin'|'professor'|'aluno', ...linha da tabela }
@@ -955,9 +960,12 @@ async function renderAlunoView(){
       const ocupadas = ocupacaoPorAula[a.id] || 0;
       const vagasRestantes = a.capacidade - ocupadas;
       const lotada = vagasRestantes <= 0 && !checkin;
+      const checkinFechado = !checkin && !checkinAindaAberto(a);
       let statusHtml;
       if(!checkin && vencida){
         statusHtml = '<button class="btn checkin-btn falta" disabled>Mensalidade vencida</button>';
+      } else if(checkinFechado){
+        statusHtml = '<button class="btn checkin-btn falta" disabled>Check-in encerrado</button>';
       } else if(lotada){
         statusHtml = '<button class="btn checkin-btn falta" disabled>LOTADA</button>';
       } else if(!checkin){
@@ -1055,7 +1063,12 @@ async function fazerCheckin(aulaId){
     await renderAlunoView();
     return;
   }
-  const { data: aula } = await sb.from('aulas').select('capacidade').eq('id', aulaId).single();
+  const { data: aula } = await sb.from('aulas').select('capacidade, data, hora').eq('id', aulaId).single();
+  if(aula && !checkinAindaAberto(aula)){
+    showToast('Check-in encerrado — já passou de ' + JANELA_CHECKIN_APOS_INICIO_MIN + ' minutos do início da aula.');
+    await renderAlunoView();
+    return;
+  }
   const { data: ocupacao } = await sb.from('checkins').select('id').eq('aula_id', aulaId).in('status', ['pendente','confirmado']);
   if(aula && (ocupacao||[]).length >= aula.capacidade){
     showToast('Essa turma acabou de lotar. Escolha outro horário.');
