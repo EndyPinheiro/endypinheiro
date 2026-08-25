@@ -297,11 +297,15 @@
     <h1 style="font-size:30px; color:var(--navy);" id="prof-nome-header">OLÁ, PROFESSOR(A)</h1>
     <p style="color:var(--ink-soft); font-size:14px; margin-top:4px;">Confirme as presenças das suas turmas para que os pontos de frequência sejam contabilizados.</p>
 
-    <div class="net-divider"><span class="label">SUAS TURMAS</span><div class="rope"></div></div>
+    <div class="net-divider">
+      <span class="label">SUAS TURMAS</span>
+      <div class="rope"></div>
+    </div>
+    <div class="grid grid-2" style="margin-bottom:14px;">
+      <div class="field"><label>Filtrar por data</label><input type="date" id="prof-filtro-data" onchange="renderProfessorView()"></div>
+      <div style="display:flex; align-items:flex-end;"><button class="btn btn-outline btn-sm" onclick="limparFiltroDataProfessor('prof')">Limpar filtro (ver todas)</button></div>
+    </div>
     <div class="grid grid-2" id="prof-turmas"></div>
-
-    <div class="net-divider"><span class="label">CONFIRMAR PRESENÇAS</span><div class="rope"></div></div>
-    <div class="card"><div id="prof-pendentes"></div></div>
 
     <div class="net-divider"><span class="label">ALUNOS DAS SUAS TURMAS</span><div class="rope"></div></div>
     <div class="card">
@@ -378,6 +382,12 @@
         <div class="rope"></div>
         <button class="btn btn-primary btn-sm" onclick="abrirCadastroAula()">+ Nova aula</button>
       </div>
+      <div class="grid grid-2">
+        <div class="field"><label>Filtrar por data início</label><input type="date" id="aulas-filtro-inicio" onchange="renderAdminAulasTable(window._adminCache.aulas)"></div>
+        <div class="field"><label>Filtrar por data fim</label><input type="date" id="aulas-filtro-fim" onchange="renderAdminAulasTable(window._adminCache.aulas)"></div>
+      </div>
+      <button class="btn btn-outline btn-sm" style="margin:-8px 0 12px 0;" onclick="limparFiltroAulas()">Limpar filtro (ver próximas 10)</button>
+      <p class="empty-note" id="aulas-lista-info" style="margin-top:-6px;"></p>
       <div class="card" style="overflow-x:auto;">
         <table id="admin-aulas-table">
           <thead><tr><th>Data</th><th>Horário</th><th>Quadra</th><th>Nível</th><th>Tipo de aula</th><th>Professor</th><th>Vagas</th><th>Ações</th></tr></thead>
@@ -420,10 +430,11 @@
       </div>
 
       <div class="net-divider"><span class="label">TURMAS</span><div class="rope"></div></div>
+      <div class="grid grid-2" style="margin-bottom:14px;">
+        <div class="field"><label>Filtrar por data</label><input type="date" id="admin-prof-filtro-data" onchange="renderAdminComoProfessor()"></div>
+        <div style="display:flex; align-items:flex-end;"><button class="btn btn-outline btn-sm" onclick="limparFiltroDataProfessor('admin-prof')">Limpar filtro (ver todas)</button></div>
+      </div>
       <div class="grid grid-2" id="admin-prof-turmas"></div>
-
-      <div class="net-divider"><span class="label">CONFIRMAR PRESENÇAS</span><div class="rope"></div></div>
-      <div class="card"><div id="admin-prof-pendentes"></div></div>
     </div>
 
     <!-- ---- PROMOÇÃO ---- -->
@@ -1125,11 +1136,15 @@ async function renderProfessorView(){
    dentro do Admin (para quando o administrador também dá aula). */
 async function renderTurmasEPendentes(professorId, prefixo){
   const hoje = new Date().toISOString().slice(0,10);
+  const filtroEl = document.getElementById(prefixo + '-filtro-data');
+  const filtroData = filtroEl ? filtroEl.value : '';
+
   const { data: vinculos } = await sb.from('aula_professores').select('aulas(*, aula_professores(professores(id,nome)))').eq('professor_id', professorId);
-  const aulas = (vinculos||[])
+  let aulas = (vinculos||[])
     .map(v=>v.aulas)
     .filter(a=>a && a.data >= hoje)
     .sort((a,b)=> (a.data+a.hora).localeCompare(b.data+b.hora));
+  if(filtroData){ aulas = aulas.filter(a=>a.data===filtroData); }
   const aulaIds = aulas.map(a=>a.id);
 
   let checkinsPorAula = {};
@@ -1142,7 +1157,6 @@ async function renderTurmasEPendentes(professorId, prefixo){
   }
 
   const statusInfo = {
-    pendente:  {label:'Aguardando aula', bg:'var(--gold-soft)', color:'#8A6D1D'},
     confirmado:{label:'Confirmado', bg:'#DFEFE6', color:'var(--success)'},
     falta:     {label:'Falta', bg:'#F3E1DE', color:'var(--danger)'}
   };
@@ -1151,16 +1165,23 @@ async function renderTurmasEPendentes(professorId, prefixo){
   if(elTurmas){
     elTurmas.innerHTML = (aulas&&aulas.length) ? aulas.map(a=>{
       const lista = checkinsPorAula[a.id] || [];
-      const nomesHtml = lista.length
-        ? '<div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;">' +
+      const linhasHtml = lista.length
+        ? '<div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">' +
           lista.map(c=>{
-            const s = statusInfo[c.status];
             const nome = c.alunos ? c.alunos.nome : '—';
-            const podeDesfazer = c.status==='confirmado' || c.status==='falta';
-            return '<span class="pill" style="background:' + s.bg + '; color:' + s.color + '; display:inline-flex; align-items:center; gap:6px;">' +
-              nome + ' · ' + s.label +
-              (podeDesfazer ? '<button onclick="desfazerCheckin(' + c.id + ',' + c.aluno_id + ',\'' + c.status + '\')" title="Desfazer" style="border:none; background:transparent; color:inherit; font-weight:900; cursor:pointer; padding:0 2px; font-size:13px; line-height:1;">↺</button>' : '') +
-              '</span>';
+            if(c.status==='pendente'){
+              return '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; padding:6px 0; border-top:1px dashed var(--line);">' +
+                '<span style="font-size:13px; font-weight:600;">' + nome + '</span>' +
+                '<div style="display:flex; gap:6px;">' +
+                '<button class="btn btn-primary btn-sm" onclick="confirmarPresenca(' + c.id + ',' + c.aluno_id + ')">Confirmar</button>' +
+                '<button class="btn btn-outline btn-sm" onclick="marcarFalta(' + c.id + ',' + c.aluno_id + ')">Falta</button>' +
+                '</div></div>';
+            }
+            const s = statusInfo[c.status];
+            return '<div style="display:flex; align-items:center; justify-content:space-between; gap:8px; padding:6px 0; border-top:1px dashed var(--line);">' +
+              '<span style="font-size:13px; font-weight:600;">' + nome + '</span>' +
+              '<span class="pill" style="background:' + s.bg + '; color:' + s.color + '; display:inline-flex; align-items:center; gap:6px;">' + s.label +
+              '<button onclick="desfazerCheckin(' + c.id + ',' + c.aluno_id + ',\'' + c.status + '\')" title="Desfazer" style="border:none; background:transparent; color:inherit; font-weight:900; cursor:pointer; padding:0 2px; font-size:13px; line-height:1;">↺</button></span></div>';
           }).join('') + '</div>'
         : '<div class="empty-note" style="padding:6px 0 0 0;">Nenhum check-in feito ainda para esta aula.</div>';
       const confirmadosCount = lista.filter(c=>c.status==='confirmado').length;
@@ -1171,31 +1192,15 @@ async function renderTurmasEPendentes(professorId, prefixo){
         '<div style="font-size:12.5px; color:var(--ink-soft); margin-top:2px;">' + a.quadra + ' · ' + a.tipo + '</div>' +
         coProfHtml +
         '<div style="font-size:12.5px; font-weight:700; color:var(--navy); margin-top:10px;">' + lista.length + ' check-in(s) · ' + confirmadosCount + ' confirmado(s)</div>' +
-        nomesHtml + '</div>';
-    }).join('') : '<p class="empty-note">Nenhuma turma atribuída ainda.</p>';
+        linhasHtml + '</div>';
+    }).join('') : '<p class="empty-note">' + (filtroData ? 'Nenhuma turma nessa data.' : 'Nenhuma turma atribuída ainda.') + '</p>';
   }
-
-  const pendentes = [];
-  Object.keys(checkinsPorAula).forEach(aid=>{
-    checkinsPorAula[aid].filter(c=>c.status==='pendente').forEach(c=>{
-      pendentes.push(Object.assign({}, c, {aula: (aulas||[]).find(a=>a.id==aid)}));
-    });
-  });
-  const elPend = document.getElementById(prefixo + '-pendentes');
-  if(elPend){
-    elPend.innerHTML = pendentes.length ? pendentes.map(c=>{
-      const nome = c.alunos ? c.alunos.nome : '—';
-      const iniciais = c.alunos ? iniciaisDe(c.alunos.nome) : '?';
-      return '<div class="student-row"><div style="display:flex; align-items:center; gap:12px;">' +
-        '<div class="avatar">' + iniciais + '</div><div>' +
-        '<div style="font-weight:700; font-size:14px;">' + nome + '</div>' +
-        '<div style="font-size:12px; color:var(--ink-soft);">' + nomeDiaCompleto(c.aula.data) + ' ' + formatarDataBR(c.aula.data) + ' ' + c.aula.hora + ' · ' + c.aula.tipo +
-        ' <span class="pill pill-pendente" style="margin-left:6px;">Pendente</span></div></div></div>' +
-        '<div style="display:flex; gap:8px;">' +
-        '<button class="btn btn-primary btn-sm" onclick="confirmarPresenca(' + c.id + ',' + c.aluno_id + ')">Confirmar presença</button>' +
-        '<button class="btn btn-outline btn-sm" onclick="marcarFalta(' + c.id + ',' + c.aluno_id + ')">Marcar falta</button></div></div>';
-    }).join('') : '<p class="empty-note">Nenhum check-in aguardando confirmação no momento.</p>';
-  }
+}
+function limparFiltroDataProfessor(prefixo){
+  const el = document.getElementById(prefixo + '-filtro-data');
+  if(el) el.value = '';
+  if(prefixo === 'prof') renderProfessorView();
+  else renderAdminComoProfessor();
 }
 
 /* ---------------- "Área do Professor" dentro do Admin ---------------- */
@@ -1381,14 +1386,40 @@ function renderCalendarioSemanal(aulas, elId){
 }
 
 function renderAdminAulasTable(aulas){
-  document.querySelector('#admin-aulas-table tbody').innerHTML = aulas.map(a=>
+  const inicioEl = document.getElementById('aulas-filtro-inicio');
+  const fimEl = document.getElementById('aulas-filtro-fim');
+  const inicio = inicioEl ? inicioEl.value : '';
+  const fim = fimEl ? fimEl.value : '';
+  const infoEl = document.getElementById('aulas-lista-info');
+
+  let lista;
+  if(inicio || fim){
+    lista = aulas.filter(a=>{
+      if(inicio && a.data < inicio) return false;
+      if(fim && a.data > fim) return false;
+      return true;
+    });
+    if(infoEl) infoEl.textContent = 'Mostrando ' + lista.length + ' aula(s) no período filtrado (de ' + aulas.length + ' cadastradas no total).';
+  } else {
+    const hoje = new Date().toISOString().slice(0,10);
+    const futuras = aulas.filter(a=>a.data >= hoje);
+    lista = futuras.slice(0, 10);
+    if(infoEl) infoEl.textContent = 'Mostrando as próximas ' + lista.length + ' de ' + futuras.length + ' aula(s) futuras (' + aulas.length + ' cadastradas no total, incluindo passadas). Use o filtro de data acima para ver outro período.';
+  }
+
+  document.querySelector('#admin-aulas-table tbody').innerHTML = lista.length ? lista.map(a=>
     '<tr><td>' + formatarDataBR(a.data) + ' <span style="color:var(--ink-soft); font-size:11.5px;">(' + nomeDiaSemana(a.data) + ')</span></td>' +
     '<td>' + a.hora + '</td><td>' + a.quadra + '</td>' +
     '<td><span class="pill ' + pillClass(a.nivel) + '">' + a.nivel + '</span></td>' +
     '<td>' + a.tipo + '</td><td>' + nomesProfessoresDaAula(a) + '</td><td>' + a.capacidade + '</td>' +
     '<td class="td-actions"><button class="btn btn-sm btn-ghost" onclick="editarAula(' + a.id + ')">Editar</button>' +
     '<button class="btn btn-sm btn-danger" onclick="excluirAula(' + a.id + ')">Excluir</button></td></tr>'
-  ).join('');
+  ).join('') : '<tr><td colspan="8" class="empty-note">Nenhuma aula encontrada.</td></tr>';
+}
+function limparFiltroAulas(){
+  document.getElementById('aulas-filtro-inicio').value = '';
+  document.getElementById('aulas-filtro-fim').value = '';
+  renderAdminAulasTable(window._adminCache.aulas);
 }
 function renderAdminProfessoresLista(professores, aulas){
   document.getElementById('admin-professores-lista').innerHTML = professores.map(p=>
